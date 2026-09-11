@@ -7,7 +7,7 @@
   "homepage": "https://voxaraspace.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/voxaraspace/voxara.git"
+    "url": "https://github.com/VoxaraSpace/voxara.git"
   },
   "scripts": {
     "start": "electron .",
