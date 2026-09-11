@@ -1,0 +1,1357 @@
+.screen--workspace {
+  position: relative;
+}
+
+/* Two structural columns plus the member panel. No icon rail. */
+.workspace {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--members-w);
+  /* minmax(0, …), not a bare auto row: an auto grid row refuses to shrink
+     below its items' content height, so once the message history grew taller
+     than the window the whole row expanded past it and pushed the composer
+     off the bottom edge (the long-hunted "clipped after Restore Down" bug —
+     it needed enough messages AND a window shorter than them, which is why
+     it kept escaping the test rig). */
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-app);
+}
+
+.workspace.no-members {
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+}
+
+.workspace.no-members .members {
+  display: none;
+}
+
+/* ------------------------------------------------------- connection banner */
+
+.connection-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  text-align: center;
+  color: #14100a;
+  background: var(--mention);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.connection-banner--error {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------- sidebar */
+
+.sidebar {
+  background: var(--bg-sidebar);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--rule);
+}
+
+.sidebar__header {
+  flex: 0 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 0 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.sidebar__brand {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.sidebar__header-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.sidebar__search {
+  flex: 0 0 auto;
+  position: relative;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.sidebar__search-icon {
+  position: absolute;
+  left: 21px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-faint);
+  display: flex;
+}
+
+.sidebar__search-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.sidebar__filter {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px 0 26px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: 12.5px;
+}
+
+.sidebar__filter::placeholder {
+  color: var(--text-faint);
+}
+
+.sidebar__filter::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.sidebar__filter:focus {
+  border-color: var(--rule-strong);
+  background: var(--bg-app);
+}
+
+.sidebar__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px 0 18px;
+}
+
+/* --------------------------------------------------------- sidebar groups */
+
+.group {
+  margin-top: 2px;
+}
+
+.group + .group {
+  margin-top: 14px;
+}
+
+/* The editorial section head: LABEL ─────────── count */
+.group__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 14px;
+  height: 26px;
+}
+
+.group__toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  transition: color var(--fast);
+}
+
+.group__toggle:hover {
+  color: var(--text);
+}
+
+.group__toggle svg {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  transition: transform var(--fast);
+}
+
+.group.is-collapsed .group__toggle svg {
+  transform: rotate(-90deg);
+}
+
+.group__chip {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--r-xs);
+  flex: 0 0 auto;
+  background-size: cover;
+  background-position: center;
+}
+
+.group__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group.is-current .group__toggle {
+  color: var(--text);
+}
+
+/* The hairline that runs from the label to the counter. */
+.group__rule {
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+  min-width: 8px;
+}
+
+.group__count {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+.group__badge {
+  flex: 0 0 auto;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--r-sm);
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.group__action {
+  flex: 0 0 auto;
+  display: none;
+  color: var(--text-muted);
+  padding: 2px;
+}
+
+.group__head:hover .group__action,
+.group__action:focus-visible {
+  display: flex;
+}
+
+.group__action svg {
+  width: 13px;
+  height: 13px;
+}
+
+.group__action:hover {
+  color: var(--text);
+}
+
+.group__body {
+  padding-top: 2px;
+}
+
+.group.is-collapsed .group__body {
+  display: none;
+}
+
+/* ------------------------------------------------------------ sidebar rows */
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 12px 0 12px;
+  border-left: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  text-align: left;
+  transition: background var(--fast), color var(--fast), border-color var(--fast);
+}
+
+.row:hover {
+  background: var(--hover);
+  color: var(--text-secondary);
+}
+
+.row.is-active {
+  background: var(--hover-strong);
+  border-left-color: var(--accent);
+  color: var(--text);
+}
+
+.row.has-unread {
+  color: var(--text);
+  font-weight: 620;
+}
+
+.row.has-unread:not(.is-active) {
+  border-left-color: var(--rule-strong);
+}
+
+.row__mark {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  color: var(--text-faint);
+}
+
+.row__mark svg {
+  width: 14px;
+  height: 14px;
+}
+
+.row.is-active .row__mark,
+.row.has-unread .row__mark {
+  color: var(--text-secondary);
+}
+
+/* Channels get a typographic hash rather than an icon. */
+.row__hash {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-faint);
+  width: 14px;
+  text-align: center;
+}
+
+.row.is-active .row__hash,
+.row.has-unread .row__hash {
+  color: var(--text-secondary);
+}
+
+.row__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row__badge {
+  flex: 0 0 auto;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--r-sm);
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.row__action {
+  flex: 0 0 auto;
+  display: none;
+  color: var(--text-muted);
+}
+
+.row:hover .row__action {
+  display: flex;
+}
+
+.row__action svg {
+  width: 13px;
+  height: 13px;
+}
+
+.row__action:hover {
+  color: var(--text);
+}
+
+/* Quick disconnect on a voice channel you're connected to — same phone icon
+   the call UI uses for "leave", just red here too so it doesn't read as
+   another way to join. */
+.row__voiceleave:hover {
+  color: var(--danger, #ff5c6c);
+}
+
+.sidebar__empty {
+  padding: 20px 16px;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.sidebar__empty strong {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* --------------------------------------------------------------- user bar */
+
+.userbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 8px 8px 12px;
+  border-top: 1px solid var(--rule);
+  background: var(--bg-sidebar);
+}
+
+.userbar__me {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 3px 4px;
+  border-radius: var(--r-sm);
+  transition: background var(--fast);
+}
+
+.userbar__me:hover {
+  background: var(--hover);
+}
+
+.userbar__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.3;
+}
+
+.userbar__name {
+  font-size: 12.5px;
+  font-weight: 640;
+  max-width: 128px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userbar__sub {
+  font-size: 10.5px;
+  font-weight: var(--label-weight);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  max-width: 128px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userbar__actions {
+  display: flex;
+  gap: 2px;
+}
+
+/* ------------------------------------------------------------------- chat */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-app);
+}
+
+.chat__header {
+  flex: 0 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px 0 20px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.chat__identity {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.chat__glyph {
+  display: none;
+}
+
+.chat__name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+
+.chat__divider {
+  align-self: center;
+  width: 1px;
+  height: 16px;
+  background: var(--rule-strong);
+  flex: 0 0 auto;
+}
+
+.chat__topic {
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat__identity:has(.chat__topic:empty) .chat__divider {
+  display: none;
+}
+
+.chat__tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.chat__searchbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg-surface);
+}
+
+.chat__searchbar svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+
+.chat__searchbar input {
+  flex: 1;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  background: var(--bg-input);
+}
+
+.chat__searchbar input:focus {
+  border-color: var(--accent);
+}
+
+.chat__searchcount {
+  font-size: 10.5px;
+  font-weight: var(--label-weight);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.chat__body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.jump-latest {
+  position: absolute;
+  right: 24px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 10.5px;
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  box-shadow: var(--shadow-md);
+  z-index: 6;
+}
+
+.jump-latest:hover {
+  background: var(--accent-hover);
+}
+
+.jump-latest svg {
+  width: 13px;
+  height: 13px;
+}
+
+.typing {
+  flex: 0 0 auto;
+  height: 20px;
+  padding: 0 22px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.typing__dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.typing__dots i {
+  width: 3px;
+  height: 3px;
+  background: var(--text-muted);
+  animation: typing-bounce 1.2s infinite ease-in-out;
+}
+
+.typing__dots i:nth-child(2) { animation-delay: 0.16s; }
+.typing__dots i:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+/* --------------------------------------------------------------- composer */
+
+.composer {
+  flex: 0 0 auto;
+  padding: 0 22px 10px;
+  position: relative;
+}
+
+/* @-mention autocomplete, floated just above the composer box. */
+.mention-ac {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: calc(100% - 4px);
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 40;
+  background: var(--bg-raised, var(--bg-input));
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  padding: 4px;
+}
+
+.mention-ac__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--r-sm, 6px);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mention-ac__item.is-active {
+  background: var(--accent, #5b6cff);
+  color: #fff;
+}
+
+.mention-ac__label {
+  font-weight: 600;
+}
+
+.mention-ac__sub {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.mention-ac__item.is-active .mention-ac__sub {
+  opacity: 0.85;
+}
+
+/* the built-in glyph shown next to a :shortcode: suggestion */
+.mention-ac__emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex: none;
+  font-size: 16px;
+}
+
+.composer__box {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: var(--r-md);
+  background: var(--bg-input);
+  border: 1px solid var(--rule);
+  transition: border-color var(--fast);
+}
+
+.composer__box:focus-within {
+  border-color: var(--rule-strong);
+}
+
+.composer.is-disabled .composer__box {
+  opacity: 0.5;
+}
+
+.composer__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 30px;
+  max-height: 220px;
+  padding: 6px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  font-size: 14px;
+  overflow-y: auto;
+}
+
+.composer__input::placeholder {
+  color: var(--text-faint);
+}
+
+.composer__right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 2px;
+}
+
+.composer__btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  transition: background var(--fast), color var(--fast);
+}
+
+.composer__btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.composer__btn:hover:not(:disabled) {
+  background: var(--hover-strong);
+  color: var(--text);
+}
+
+.composer__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.composer__btn--send {
+  color: var(--accent);
+}
+
+.composer__btn--send:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+}
+
+.composer__count {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  padding: 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.composer__count.is-over {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.composer__hint {
+  padding: 6px 2px 0;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.composer__hint strong {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------- members */
+
+.members {
+  background: var(--bg-sidebar);
+  border-left: 1px solid var(--rule);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.members__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 0 20px;
+}
+
+.members__group {
+  margin-bottom: 18px;
+}
+
+.members__group h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px 8px;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.members__group h3::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.member {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 5px 14px;
+  border-left: 2px solid transparent;
+  text-align: left;
+  transition: background var(--fast), border-color var(--fast);
+}
+
+.member:hover {
+  background: var(--hover);
+  border-left-color: var(--rule-strong);
+}
+
+.member.is-offline {
+  opacity: 0.45;
+}
+
+.member.is-offline:hover {
+  opacity: 0.8;
+}
+
+.member__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.member__name {
+  font-size: 13px;
+  font-weight: 560;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member__owner {
+  margin-left: 5px;
+  font-size: 9px;
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--mention);
+}
+
+.member__sub {
+  font-size: 11px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Narrow windows shed the member panel, then overlay the sidebar. */
+@media (max-width: 980px) {
+  .workspace {
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  }
+
+  .workspace .members {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .workspace,
+  .workspace.no-members {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace .sidebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 30;
+    width: var(--sidebar-w);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-102%);
+    transition: transform var(--normal);
+    display: flex;
+  }
+
+  .workspace.sidebar-open .sidebar {
+    transform: none;
+  }
+
+  /* A dim backdrop behind the open sidebar; tapping it closes the sidebar. */
+  .workspace.sidebar-open::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 29;
+    background: rgba(0, 0, 0, .45);
+  }
+  .chat__menu { display: inline-flex; }
+  .chat__topic { display: none; }
+  /* Fingers, not pointers. */
+  .row { min-height: 42px; }
+  .composer__input, .field__input { font-size: 16px; } /* keeps phone browsers from zooming into the field */
+  .msg__tools { opacity: 1; } /* hover has no meaning on touch */
+  /* The title bar keeps the brand, the inbox and the window buttons; the rest needs the width. */
+  .breadcrumb, .statuspill__label, .titlebar__search { display: none; }
+}
+.chat__menu { display: none; margin-right: 4px; }
+
+/* ------------------------------------------------------- friends / spaces */
+
+/* The two sections are separate places, not one merged list. */
+.modeswitch {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--rule);
+}
+
+.modeswitch__tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 34px;
+  border-bottom: 2px solid transparent;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  transition: color var(--fast), border-color var(--fast), background var(--fast);
+}
+
+.modeswitch__tab:hover {
+  color: var(--text-secondary);
+  background: var(--hover);
+}
+
+.modeswitch__tab.is-active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.modeswitch__badge {
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: var(--r-sm);
+  background: var(--danger);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0;
+  display: grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- space strip ---------------------------------------------------------- */
+
+/* Spaces run across the top as tiles rather than down the edge as an icon
+   column: avatar above, name beneath, the open one underlined. */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sidebar__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.spacebar {
+  flex: none;
+  border-bottom: 1px solid var(--rule);
+  padding: 8px 6px 0;
+}
+
+.spacebar__strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  /* Two rows, then scroll. The picker competes with the channel list for the
+     sidebar's height, and the channels are what you actually read — so the
+     picker is capped rather than allowed to grow with the space count. */
+  max-height: 156px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+
+.spacetile {
+  /* Overridden per tile from the space's own colour. */
+  --space-color: var(--accent);
+  position: relative;
+  flex: none;
+  width: 78px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 2px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text-muted);
+}
+.spacetile:hover { color: var(--text); }
+.spacetile:hover .spacetile__face { transform: translateY(-1px); }
+
+/* The open space is underlined in its own colour, the way a tab strip reads. */
+.spacetile.is-current {
+  color: var(--text);
+  border-bottom-color: var(--space-color, var(--accent));
+}
+
+.spacetile__face {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-md);
+  background-size: cover;
+  background-position: center;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-on-accent);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / .2);
+  transition: transform var(--fast);
+}
+.spacetile.is-current .spacetile__face { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .2), 0 0 0 2px var(--space-color, var(--accent)); }
+
+.spacetile__face--action {
+  background: none;
+  color: var(--text-muted);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.spacetile__face--action svg { width: 16px; height: 16px; }
+.spacetile--action:hover .spacetile__face--action { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
+.spacetile__name {
+  max-width: 100%;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spacetile__badge {
+  position: absolute;
+  top: -4px;
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--r-full);
+  background: var(--mention);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  border: 2px solid var(--bg-sidebar);
+}
+
+/* Compact: drop the names, keep the tiles (Ctrl+B). */
+.spacebar.is-compact .spacetile { width: 46px; padding-bottom: 6px; }
+.spacebar.is-compact .spacebar__strip { max-height: 104px; }
+.spacebar.is-compact .spacetile__name { display: none; }
+
+/* Single-line layout: each space is one row — a small icon and its name side
+   by side, stacked vertically — matching the one-line friend rows. Set from
+   Appearance settings (data-sidebar="rows" on <html>). */
+[data-sidebar="rows"] .spacebar__strip {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 1px;
+  max-height: 190px;
+}
+[data-sidebar="rows"] .spacetile {
+  width: 100%;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 8px;
+  border-bottom: 0;
+  border-radius: var(--r-sm, 6px);
+}
+[data-sidebar="rows"] .spacetile.is-current {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+  box-shadow: inset 2px 0 0 var(--space-color, var(--accent));
+}
+[data-sidebar="rows"] .spacetile:hover { background: var(--bg-hover, rgba(255, 255, 255, 0.05)); }
+[data-sidebar="rows"] .spacetile:hover .spacetile__face { transform: none; }
+[data-sidebar="rows"] .spacetile__face { width: 24px; height: 24px; font-size: 9.5px; }
+[data-sidebar="rows"] .spacetile__name {
+  font-size: 13px;
+  max-width: none;
+  flex: 1;
+  text-align: left;
+}
+/* In row mode the compact (icon-only) toggle would fight the layout, so names
+   stay; the two are mutually exclusive looks. */
+[data-sidebar="rows"] .spacebar.is-compact .spacetile { width: 100%; }
+[data-sidebar="rows"] .spacebar.is-compact .spacetile__name { display: block; }
+
+/* --- space banner header -------------------------------------------------- */
+
+.spacehead { flex: none; }
+
+.spacehead__banner {
+  position: relative;
+  height: 84px;
+  background-size: cover;
+  background-position: center;
+}
+.spacehead__banner.is-plain { opacity: .55; }
+
+.spacehead__edit {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  opacity: 0;
+  transition: opacity var(--fast), background var(--fast);
+}
+.spacehead:hover .spacehead__edit { opacity: 1; }
+.spacehead__edit:hover { background: rgba(0, 0, 0, 0.72); }
+.spacehead__edit svg { width: 15px; height: 15px; }
+
+.spacehead__bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 10px;
+  margin-top: -18px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+.spacehead__bar:hover .spacehead__name { color: var(--accent); }
+
+.spacehead__icon {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: var(--r-md);
+  background-size: cover;
+  background-position: center;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-on-accent);
+  border: 3px solid var(--bg-sidebar);
+}
+
+.spacehead__text { display: flex; flex-direction: column; min-width: 0; padding-top: 16px; }
+.spacehead__name {
+  font-weight: 650;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spacehead__meta { font-size: 11.5px; color: var(--text-muted); }
+.spacehead__chev {
+  margin-left: auto;
+  align-self: flex-end;
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity var(--fast);
+}
+.spacehead__bar:hover .spacehead__chev { opacity: 1; }
+
+.group__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px 4px;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.group__add {
+  margin-left: auto;
+  background: none;
+  border: 0;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+}
+.group__add:hover { color: var(--text); }
+.group__add [data-icon] { width: 14px; height: 14px; }
+
+/* With the rail visible the sidebar carries two columns, so it needs the
+   extra width back or the space name and channel rows truncate. */
+.spacehead__chev svg { width: 16px; height: 16px; }
+.msg__replyicon svg, .composer__replyicon svg { width: 14px; height: 14px; }
+
+/* --- category headings ---------------------------------------------------- */
+
+.cathead {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 12px 4px 10px;
+}
+.cathead__toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  color: var(--text-muted);
+  text-align: left;
+}
+.cathead__toggle:hover { color: var(--text); }
+.cathead__toggle > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cathead__caret {
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  flex: none;
+  transition: transform var(--fast);
+}
+.cathead__caret svg { width: 12px; height: 12px; }
+.cathead.is-collapsed .cathead__caret { transform: rotate(-90deg); }
+
+.cathead__count {
+  font-size: 11px;
+  color: var(--text-faint);
+  flex: none;
+}
+.cathead__add {
+  background: none;
+  border: 0;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity var(--fast), color var(--fast);
+  flex: none;
+}
+.cathead:hover .cathead__add,
+.cathead__add:focus-visible { opacity: 1; }
+.cathead__add:hover { color: var(--text); }
+.cathead__add svg { width: 14px; height: 14px; }
+
+/* Dragging a friend into a category. */
+.row.is-dragging { opacity: .45; }
+.cathead.is-droptarget {
+  background: var(--accent-soft);
+  border-radius: var(--r-sm);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.cathead.is-droptarget .cathead__toggle { color: var(--accent); }
+
+/* The Friends heading accepts a drop too, taking someone out of a category. */
+.group__head.is-droptarget {
+  background: var(--accent-soft);
+  border-radius: var(--r-sm);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.group__head.is-droptarget .group__toggle { color: var(--accent); }

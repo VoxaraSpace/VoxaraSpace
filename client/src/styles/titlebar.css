@@ -1,0 +1,453 @@
+.titlebar {
+  display: flex;
+  align-items: stretch;
+  height: var(--titlebar-h);
+  flex: 0 0 var(--titlebar-h);
+  background: var(--bg-app);
+  border-bottom: 1px solid var(--rule);
+  user-select: none;
+  position: relative;
+  z-index: 60;
+}
+
+/* The whole strip drags the window; interactive children opt back out. */
+.titlebar__drag {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titlebar__brand {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.titlebar__logo {
+  width: 13px;
+  height: 13px;
+  border-radius: var(--r-xs);
+  background: var(--accent);
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 10.5px;
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  overflow: hidden;
+}
+
+.breadcrumb__item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.breadcrumb__item--current {
+  color: var(--text-secondary);
+}
+
+.breadcrumb__item--link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.breadcrumb__item--link:hover { color: var(--text-secondary); text-decoration: underline; }
+
+.breadcrumb__sep {
+  color: var(--rule-strong);
+  flex: 0 0 auto;
+}
+
+.titlebar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: border-color var(--fast), color var(--fast);
+}
+
+.titlebar__search:hover {
+  border-color: var(--rule-strong);
+  color: var(--text-secondary);
+}
+
+.titlebar__search-icon {
+  display: flex;
+}
+
+.titlebar__search svg {
+  width: 12px;
+  height: 12px;
+}
+
+.titlebar__search kbd {
+  font-family: var(--font);
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: var(--r-xs);
+  background: var(--hover-strong);
+  color: var(--text-faint);
+}
+
+.window-controls {
+  display: flex;
+  align-items: stretch;
+  height: var(--titlebar-h);
+}
+
+.window-controls::before {
+  content: "";
+  align-self: center;
+  width: 1px;
+  height: 16px;
+  margin-right: 6px;
+  background: var(--rule);
+}
+
+.window-btn {
+  width: 44px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  position: relative;
+  transition: background var(--fast), color var(--fast);
+}
+
+/* A hairline under the hovered control, so the row reads as one component. */
+.window-btn::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 6px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--fast);
+}
+
+.window-btn:hover::after {
+  opacity: 0.4;
+}
+
+.window-btn--close:hover::after {
+  opacity: 0;
+}
+
+.window-btn svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+
+.window-btn:hover {
+  background: var(--hover-strong);
+  color: var(--text);
+}
+
+.window-btn:active {
+  background: var(--active);
+}
+
+.window-btn--close:hover {
+  background: #e5484d;
+  color: #fff;
+}
+
+.window-btn:focus-visible {
+  outline-offset: -3px;
+}
+
+.icon-restore {
+  display: none;
+}
+
+.app.is-maximized .icon-maximize {
+  display: none;
+}
+
+.app.is-maximized .icon-restore {
+  display: block;
+}
+
+/* Connection state reads as a deliberate chip, and its colour carries the
+   meaning: green when connected, amber while working, red when down. */
+.statuspill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  height: 20px;
+  padding: 0 9px 0 8px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-full);
+  background: var(--hover);
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color var(--fast), border-color var(--fast), background var(--fast);
+}
+
+.statuspill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+  transition: background var(--fast), box-shadow var(--fast);
+}
+
+.statuspill__label {
+  transition: opacity var(--fast);
+}
+
+/* Connected: the same chip as every other state, in green. */
+.statuspill--online {
+  color: var(--online);
+  border-color: rgba(53, 201, 106, 0.35);
+  background: rgba(53, 201, 106, 0.1);
+}
+
+.statuspill--online .statuspill__dot {
+  box-shadow: 0 0 0 3px rgba(53, 201, 106, 0.16);
+}
+
+/* Working on it. */
+.statuspill--connecting {
+  color: var(--idle);
+  border-color: rgba(224, 169, 46, 0.35);
+  background: var(--mention-soft);
+}
+
+.statuspill--connecting .statuspill__dot {
+  box-shadow: 0 0 0 3px rgba(224, 169, 46, 0.15);
+  animation: pill-pulse 1.4s ease-in-out infinite;
+}
+
+/* Lost the server. */
+.statuspill--offline {
+  color: var(--dnd);
+  border-color: rgba(226, 86, 79, 0.4);
+  background: var(--danger-soft);
+}
+
+.statuspill--offline .statuspill__dot {
+  box-shadow: 0 0 0 3px rgba(226, 86, 79, 0.16);
+}
+
+@keyframes pill-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.titlebar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: border-color var(--fast), color var(--fast);
+}
+
+.titlebar__search:hover {
+  border-color: var(--rule-strong);
+  color: var(--text-secondary);
+}
+
+.titlebar__search-icon {
+  display: flex;
+}
+
+.titlebar__search svg {
+  width: 12px;
+  height: 12px;
+}
+
+.titlebar__search kbd {
+  font-family: var(--font);
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: var(--r-xs);
+  background: var(--hover-strong);
+  color: var(--text-faint);
+}
+
+.window-controls {
+  display: flex;
+  align-items: stretch;
+  height: var(--titlebar-h);
+}
+
+.window-controls::before {
+  content: "";
+  align-self: center;
+  width: 1px;
+  height: 16px;
+  margin-right: 6px;
+  background: var(--rule);
+}
+
+.window-btn {
+  width: 44px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  position: relative;
+  transition: background var(--fast), color var(--fast);
+}
+
+/* A hairline under the hovered control, so the row reads as one component. */
+.window-btn::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 6px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--fast);
+}
+
+.window-btn:hover::after {
+  opacity: 0.4;
+}
+
+.window-btn--close:hover::after {
+  opacity: 0;
+}
+
+.window-btn svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+
+.window-btn:hover {
+  background: var(--hover-strong);
+  color: var(--text);
+}
+
+.window-btn:active {
+  background: var(--active);
+}
+
+.window-btn--close:hover {
+  background: #e5484d;
+  color: #fff;
+}
+
+.window-btn:focus-visible {
+  outline-offset: -3px;
+}
+
+.icon-restore {
+  display: none;
+}
+
+.app.is-maximized .icon-maximize {
+  display: none;
+}
+
+.app.is-maximized .icon-restore {
+  display: block;
+}
+
+/* Connection state reads as a deliberate chip, not leftover grey text. */
+
+
+@keyframes pill-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* Signed out there is no workspace to caption, and a full-width bar floating
+   above the sign-in card looks like a stray fragment of window. The card
+   carries its own minimise and close instead. */
+body:not(.is-authed) .titlebar {
+  display: none;
+}
+
+/* Inbox button in the titlebar */
+.titlebar__inbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--text-faint);
+  -webkit-app-region: no-drag;
+  transition: border-color var(--fast), color var(--fast), background var(--fast);
+}
+.titlebar__inbox:hover { color: var(--text-secondary); background: var(--hover); }
+.titlebar__inbox svg { width: 15px; height: 15px; }
+.titlebar__inbox-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger, #e5484d);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 15px;
+  text-align: center;
+}
+.titlebar__inbox.is-on { color: var(--accent-hover); background: var(--accent-soft); }

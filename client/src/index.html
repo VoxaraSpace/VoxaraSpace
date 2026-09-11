@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; connect-src 'self' ws: wss:; img-src 'self' data: blob: http: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; media-src 'self' blob: http: https:; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none';"
+  />
+  <title>Voxara</title>
+  <link rel="stylesheet" href="styles/tokens.css" />
+  <link rel="stylesheet" href="styles/base.css" />
+  <link rel="stylesheet" href="styles/titlebar.css" />
+  <link rel="stylesheet" href="styles/auth.css" />
+  <link rel="stylesheet" href="styles/layout.css" />
+  <link rel="stylesheet" href="styles/messages.css" />
+  <link rel="stylesheet" href="styles/components.css" />
+</head>
+<body>
+  <div id="app" class="app">
+
+    <!-- ---------------------------------------------------------- titlebar -->
+    <header class="titlebar" id="titlebar">
+      <div class="titlebar__drag">
+        <div class="titlebar__brand">
+          <span class="titlebar__logo" aria-hidden="true"></span>
+        </div>
+        <span class="statuspill statuspill--connecting" id="connectionPill"
+              role="status" aria-live="polite" title="Connection to the Voxara server">
+          <span class="statuspill__dot" aria-hidden="true"></span>
+          <span class="statuspill__label" id="connectionLabel">Connecting</span>
+        </span>
+        <nav class="breadcrumb" id="breadcrumb" aria-label="Current location"></nav>
+      </div>
+      <div class="titlebar__actions">
+        <button class="titlebar__inbox" id="titlebarFocus" type="button" title="Focus mode — silence everything" aria-label="Focus mode">
+          <span data-icon="moon"></span>
+        </button>
+        <button class="titlebar__inbox" id="titlebarInbox" type="button" title="Inbox — saved messages, mentions and reminders" aria-label="Inbox">
+          <span data-icon="bookmark"></span>
+          <span class="titlebar__inbox-badge" id="inboxBadge" hidden></span>
+        </button>
+        <button class="titlebar__search" id="titlebarSearch" type="button" title="Quick switcher (Ctrl+K)">
+          <span class="titlebar__search-icon" data-icon="search"></span>
+          <span>Jump to…</span>
+          <kbd>Ctrl K</kbd>
+        </button>
+        <div class="window-controls">
+          <button class="window-btn" id="winMinimize" type="button" aria-label="Minimize" title="Minimize">
+            <svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.5" width="8" height="1" /></svg>
+          </button>
+          <button class="window-btn" id="winMaximize" type="button" aria-label="Maximize" title="Maximize">
+            <svg viewBox="0 0 12 12" aria-hidden="true" class="icon-maximize">
+              <rect x="2.5" y="2.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1" />
+            </svg>
+            <svg viewBox="0 0 12 12" aria-hidden="true" class="icon-restore">
+              <rect x="2.5" y="4.5" width="5" height="5" fill="none" stroke="currentColor" stroke-width="1" />
+              <path d="M4.5 4.5V2.5h5v5h-2" fill="none" stroke="currentColor" stroke-width="1" />
+            </svg>
+          </button>
+          <button class="window-btn window-btn--close" id="winClose" type="button" aria-label="Close" title="Close">
+            <svg viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.2" fill="none" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ------------------------------------------------------ connect/auth -->
+    <section class="screen screen--auth" id="screenAuth" aria-label="Sign in">
+      <div class="auth">
+        <div class="auth__panel">
+          <div class="auth__mark" aria-hidden="true"></div>
+          <h1 class="auth__title" id="authTitle">Welcome back</h1>
+          <p class="auth__subtitle" id="authSubtitle">Sign in to pick up where you left off.</p>
+          <p class="auth__early" id="authEarly" hidden></p>
+
+          <form class="auth__form" id="authForm" autocomplete="on">
+            <div class="field" id="fieldDisplayName" hidden>
+              <label class="field__label" for="authDisplayName">Display name</label>
+              <input class="field__input" id="authDisplayName" type="text" maxlength="32" placeholder="How people see you" autocomplete="nickname" />
+              <p class="field__hint">You can change this any time.</p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="authUsername">Username</label>
+              <input class="field__input" id="authUsername" type="text" maxlength="24" placeholder="lowercase, no spaces" autocomplete="username" required />
+            </div>
+
+            <div class="field" id="fieldEmail" hidden>
+              <label class="field__label" for="authEmail">Email</label>
+              <input class="field__input" id="authEmail" type="email" maxlength="120" placeholder="you@example.com" autocomplete="email" spellcheck="false" />
+              <p class="field__hint">For account recovery and important notices.</p>
+            </div>
+
+            <div class="field" id="fieldBirthdate" hidden>
+              <label class="field__label" for="authBirthdate">Date of birth</label>
+              <input class="field__input" id="authBirthdate" type="date" autocomplete="bday" />
+              <p class="field__hint">You must be at least 13 to sign up.</p>
+            </div>
+
+            <div class="field" id="fieldInviteCode" hidden>
+              <label class="field__label" for="authInviteCode">Invite code</label>
+              <input class="field__input" id="authInviteCode" type="text" maxlength="12" placeholder="ABC123" autocomplete="off" spellcheck="false" />
+              <p class="field__hint">This server is invite only. Ask whoever runs it for a code.</p>
+            </div>
+
+            <div class="field" id="fieldRecoveryCode" hidden>
+              <label class="field__label" for="authRecoveryCode">Recovery code</label>
+              <input class="field__input" id="authRecoveryCode" type="text" maxlength="16" placeholder="ABCDE-FGHJK" autocomplete="off" spellcheck="false" />
+              <p class="field__hint">One of the codes you saved when you created the account. No codes? <button class="link" id="authEmailReset" type="button">Email me a reset link instead</button></p>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="authPassword">Password</label>
+              <div class="field__row">
+                <input class="field__input" id="authPassword" type="password" placeholder="At least 8 characters" autocomplete="current-password" required />
+                <button class="field__reveal" id="authReveal" type="button" aria-label="Show password" title="Show password">Show</button>
+              </div>
+            </div>
+
+
+            <p class="auth__forgot" id="authForgotRow">
+              <button class="link" id="authForgot" type="button">Forgot your password?</button>
+            </p>
+
+            <p class="auth__error" id="authError" role="alert" hidden></p>
+
+            <button class="btn btn--primary btn--block" id="authSubmit" type="submit">Sign in</button>
+          </form>
+
+          <p class="auth__switch">
+            <span id="authSwitchText">New here?</span>
+            <button class="link" id="authSwitch" type="button">Create an account</button>
+          </p>
+          <p class="auth__legal">By continuing you agree to the <a href="https://voxaraspace.com/legal/terms.html">Terms of Service</a> and <a href="https://voxaraspace.com/legal/privacy.html">Privacy Policy</a>.</p>
+
+          <div class="auth__status" id="authStatus" aria-live="polite"></div>
+        </div>
+        <div class="auth__window">
+          <button class="window-btn" id="authWinMinimize" type="button" aria-label="Minimize" title="Minimize">
+            <svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.5" width="8" height="1" /></svg>
+          </button>
+          <button class="window-btn window-btn--close" id="authWinClose" type="button" aria-label="Close" title="Close">
+            <svg viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.1" fill="none" />
+            </svg>
+          </button>
+        </div>
+
+        <aside class="auth__aside" aria-hidden="true">
+          <h2>Everything in one window</h2>
+          <ul>
+            <li><strong>Spaces &amp; channels</strong>Organise conversations the way your group actually works.</li>
+            <li><strong>Direct messages</strong>One-to-one, always a click away.</li>
+            <li><strong>Ctrl&nbsp;K</strong>Jump to any channel, space or person instantly.</li>
+            <li><strong>Reactions, edits, replies</strong>The things you reach for every day.</li>
+          </ul>
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------- workspace -->
+    <section class="screen screen--workspace" id="screenWorkspace" hidden>
+      <div class="connection-banner" id="connectionBanner" hidden role="status"></div>
+
+      <div class="workspace">
+        <aside class="sidebar" id="sidebar" aria-label="Spaces and channels">
+          <div class="sidebar__main">
+          <header class="sidebar__header" id="sidebarHeader">
+            <h2 class="sidebar__brand">Voxara</h2>
+            <div class="sidebar__header-actions">
+              <button class="icon-btn" id="sidebarCreate" type="button" aria-label="Create a space" title="Create a space">
+                <span data-icon="plus"></span>
+              </button>
+              <button class="icon-btn" id="sidebarJoin" type="button" aria-label="Join with an invite link" title="Join with an invite link">
+                <span data-icon="compass"></span>
+              </button>
+              <button class="icon-btn" id="sidebarStore" type="button" aria-label="Steam store" title="Steam store" hidden>
+                <span data-icon="steam"></span>
+              </button>
+              <button class="icon-btn" id="sidebarCards" type="button" aria-label="Your cards" title="Your cards">
+                <span data-icon="layers"></span>
+              </button>
+              <button class="icon-btn" id="sidebarCompact" type="button" aria-label="Show or hide space names" title="Show or hide space names (Ctrl+B)" aria-pressed="false">
+                <span data-icon="minus"></span>
+              </button>
+            </div>
+          </header>
+
+          <div class="modeswitch" role="tablist" aria-label="Friends or spaces">
+            <button class="modeswitch__tab" id="modeFriends" type="button" role="tab" aria-selected="true">
+              Friends
+              <span class="modeswitch__badge" id="modeFriendsBadge" hidden></span>
+            </button>
+            <button class="modeswitch__tab" id="modeSpaces" type="button" role="tab" aria-selected="false">
+              Spaces
+              <span class="modeswitch__badge" id="modeSpacesBadge" hidden></span>
+            </button>
+          </div>
+
+          <div class="sidebar__search" id="sidebarSearchRow">
+            <span class="sidebar__search-icon" data-icon="search"></span>
+            <input id="sidebarFilter" class="sidebar__filter" type="search" placeholder="Filter channels and people" aria-label="Filter channels and people" />
+          </div>
+
+          <nav class="spacebar" id="spaceList" aria-label="Your spaces" hidden></nav>
+
+          <div class="spacehead" id="spaceHead" hidden></div>
+
+          <div class="sidebar__scroll" id="sidebarScroll"></div>
+
+          <footer class="userbar" id="userbar">
+            <button class="userbar__me" id="userbarMe" type="button" title="Change your status and profile">
+              <span class="avatar avatar--sm" id="userbarAvatar"><span class="avatar__status"></span></span>
+              <span class="userbar__text">
+                <span class="userbar__name" id="userbarName">—</span>
+                <span class="userbar__sub" id="userbarSub">Offline</span>
+              </span>
+            </button>
+            <div class="userbar__actions">
+              <button class="icon-btn" id="userbarSettings" type="button" aria-label="Settings" title="Settings"><span data-icon="settings"></span></button>
+              <button class="icon-btn" id="userbarLogout" type="button" aria-label="Sign out" title="Sign out"><span data-icon="logout"></span></button>
+            </div>
+          </footer>
+          </div>
+        </aside>
+
+        <main class="chat" id="chat" aria-label="Conversation">
+          <header class="chat__header" id="chatHeader">
+            <div class="chat__identity">
+              <button class="icon-btn chat__menu" id="chatMenu" type="button" aria-label="Open the sidebar" title="Channels and friends"><span data-icon="list"></span></button>
+              <span class="chat__glyph" id="chatGlyph" data-icon="hash"></span>
+              <h1 class="chat__name" id="chatName">Select a channel</h1>
+              <span class="chat__divider" aria-hidden="true"></span>
+              <p class="chat__topic" id="chatTopic"></p>
+            </div>
+            <div class="chat__tools">
+              <button class="icon-btn" id="chatCatchup" type="button" aria-label="Catch me up" title="Catch me up on what you missed" hidden><span data-icon="sparkle"></span></button>
+              <button class="icon-btn" id="chatCall" type="button" aria-label="Start a voice call" title="Voice call" hidden><span data-icon="phone"></span></button>
+              <button class="icon-btn" id="chatVideo" type="button" aria-label="Start a video call" title="Video call" hidden><span data-icon="video"></span></button>
+              <button class="icon-btn" id="chatPins" type="button" aria-label="Pinned messages" title="Pinned messages"><span data-icon="pin"></span></button>
+              <button class="icon-btn" id="chatSearch" type="button" aria-label="Search this conversation" title="Search this conversation (Ctrl+F)"><span data-icon="search"></span></button>
+              <button class="icon-btn" id="chatToggleMembers" type="button" aria-label="Toggle member list" title="Toggle member list (Ctrl+M)" aria-pressed="true"><span data-icon="users"></span></button>
+              <button class="icon-btn" id="chatHelp" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (Ctrl+/)"><span data-icon="help"></span></button>
+            </div>
+          </header>
+
+          <div class="chat__searchbar" id="chatSearchBar" hidden>
+            <span data-icon="search"></span>
+            <input id="chatSearchInput" type="search" placeholder="Search — try from:@name  has:link  before:2026-01-01" aria-label="Search messages" title="Filters: from:@name · has:link|file|image|poll · before:/after:YYYY-MM-DD" />
+            <select class="chat__searchscope field__input" id="chatSearchScope" aria-label="Where to search">
+              <option value="channel">This channel</option>
+              <option value="space">This space</option>
+              <option value="all">Everywhere</option>
+            </select>
+            <span class="chat__searchcount" id="chatSearchCount"></span>
+            <button class="icon-btn" id="chatSearchClose" type="button" aria-label="Close search"><span data-icon="close"></span></button>
+          </div>
+
+          <div class="chat__body">
+            <div class="messages" id="messageScroll" tabindex="0" role="log" aria-live="polite" aria-relevant="additions"></div>
+            <button class="jump-latest" id="jumpLatest" type="button" hidden>
+              <span data-icon="arrow-down"></span> Jump to newest
+            </button>
+          </div>
+
+          <div class="typing" id="typingBar" aria-live="polite"></div>
+
+          <div class="composer" id="composer">
+            <div class="composer__reply" id="composerReply" hidden></div>
+            <div class="tray" id="composerTray" hidden></div>
+            <div class="composer__box">
+              <button class="composer__btn" id="composerAttach" type="button" aria-label="Attach files" title="Attach images, GIFs or files"><span data-icon="plus"></span></button>
+              <textarea
+                id="composerInput"
+                class="composer__input"
+                rows="1"
+                maxlength="4000"
+                placeholder="Select a channel to start talking"
+                aria-label="Message"
+                disabled
+              ></textarea>
+              <div class="composer__right">
+                <span class="composer__count" id="composerCount" hidden></span>
+                <button class="composer__btn" id="composerGif" type="button" aria-label="GIF" title="GIF" hidden><span class="composer__giflabel">GIF</span></button>
+                <button class="composer__btn" id="composerEmoji" type="button" aria-label="Emoji" title="Emoji"><span data-icon="smile"></span></button>
+                <button class="composer__btn composer__btn--send" id="composerSend" type="button" aria-label="Send message" title="Send (Enter)"><span data-icon="send"></span></button>
+              </div>
+            </div>
+            <p class="composer__hint" id="composerHint">
+              <strong>Enter</strong> to send · <strong>Shift+Enter</strong> for a new line · <strong>**bold**</strong> · <strong>*italic*</strong> · <strong>`code`</strong>
+            </p>
+          </div>
+        </main>
+
+        <aside class="members" id="members" aria-label="Members">
+          <div class="members__scroll" id="membersScroll"></div>
+        </aside>
+      </div>
+    </section>
+
+    <div class="overlay-root" id="overlayRoot"></div>
+    <div class="toasts" id="toasts" aria-live="assertive"></div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  /* Opaque all the way down. The window is not transparent any more, and a
+     transparent page root leaves any pixel the page has not painted yet (a
+     resize in progress, the fill-to-work-area step, the restore nudge) to
+     whatever the GPU buffer happens to hold — which shows up on Windows as
+     bands of static along the edges. Painting every pixel ourselves ends it. */
+  background: var(--bg-app, #0d0d0f);
+}
+
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+/* Nothing in this app can be dropped anywhere useful, so a browser's own
+ * image-drag (picking up an avatar, an emoji, an attachment thumbnail —
+ * anything is draggable by default) only ever gets in the way: it reads to
+ * the composer's file-drop zone as a real drag in progress, lighting up
+ * "Drop to attach" for a drop that was never a file — and if that drag
+ * doesn't end cleanly over the drop zone, the highlight can get stuck on
+ * screen. Applied globally, not just where a bug was seen, since an image
+ * can be dragged from literally anywhere in the app. */
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+h1, h2, h3, h4, p, ul, ol {
+  margin: 0;
+}
+
+ul, ol {
+  padding: 0;
+  list-style: none;
+}
+
+code, kbd, pre {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+/* Focus: never invisible, never in the way of a mouse user. */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+/* Scrollbars sized so they never crowd narrow columns. */
+.scroll-y {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rule-strong);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--r-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* -------------------------------------------------------------- app frame */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  /* Driven by a measured pixel height (set in js/main.js) rather than bare
+     100vh: after a minimize/restore on Windows, vh can keep resolving against
+     a stale viewport even when window.innerHeight is correct, which laid the
+     composer out beyond the bottom edge. The vh value is only the fallback
+     for the instant before the first measurement lands. */
+  height: var(--app-h, 100vh);
+  /* clip, not hidden: hidden still allows a descendant's focus/scrollIntoView
+     to scroll this container programmatically (no scrollbar, so no way back),
+     which shoved the title bar off the top. clip forbids scrolling entirely. */
+  overflow: clip;
+}
+
+.screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Account-level "reduce flashing & motion" (photosensitivity) — forced on,
+   regardless of the OS setting, for accounts that ask for it. */
+body.reduce-flashing *,
+body.reduce-flashing *::before,
+body.reduce-flashing *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

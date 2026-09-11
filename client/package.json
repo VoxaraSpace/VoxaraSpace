@@ -1,0 +1,75 @@
+{
+  "name": "pulse-client",
+  "version": "1.46.3",
+  "description": "Voxara desktop app: voice and text chat for friends and communities",
+  "main": "main.js",
+  "license": "Apache-2.0",
+  "homepage": "https://voxaraspace.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voxaraspace/voxara.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win zip --x64",
+    "pack": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^32.2.0",
+    "electron-builder": "^25.1.8",
+    "resedit": "^2.0.3"
+  },
+  "build": {
+    "appId": "com.pulse.chat",
+    "productName": "Voxara",
+    "protocols": [
+      {
+        "name": "Voxara",
+        "schemes": [
+          "voxara"
+        ]
+      }
+    ],
+    "directories": {
+      "output": "../dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*",
+      "!build${/*}",
+      "!**/*.map"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "artifactName": "Voxara-${version}-${arch}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Voxara",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "VoxaraSetup-${version}.${ext}"
+    },
+    "extraFiles": [
+      {
+        "from": "build/Install Voxara.cmd",
+        "to": "Install Voxara.cmd"
+      },
+      {
+        "from": "build/README.txt",
+        "to": "README.txt"
+      }
+    ],
+    "afterPack": "build/after-pack.js"
+  },
+  "buildSerial": 105,
+  "private": true
+}

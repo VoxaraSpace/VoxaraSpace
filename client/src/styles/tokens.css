@@ -1,0 +1,127 @@
+/* ------------------------------------------------------------------------- *
+ * Design tokens — "crisp & editorial".
+ *
+ * The house style is: near-black ground, hairline RULES instead of filled
+ * boxes, sharp corners, and a strong typographic hierarchy carrying the
+ * structure. One ink accent, used sparingly.
+ * ------------------------------------------------------------------------- */
+
+:root {
+  /* Grounds, darkest to lightest */
+  --bg-app: #0d0d0f;
+  --bg-sidebar: #121215;
+  --bg-surface: #131316;
+  --bg-raised: #1c1c20;
+  --bg-input: #1a1a1e;
+  --bg-overlay: rgba(5, 5, 7, 0.72);
+
+  /* Rules do the structural work that borders-plus-fills would elsewhere. */
+  --rule: rgba(255, 255, 255, 0.085);
+  --rule-strong: rgba(255, 255, 255, 0.17);
+  --rule-accent: rgba(77, 124, 254, 0.5);
+
+  --hover: rgba(255, 255, 255, 0.038);
+  --hover-strong: rgba(255, 255, 255, 0.07);
+  --active: rgba(255, 255, 255, 0.1);
+
+  /* Type */
+  --text: #fafafa;
+  --text-secondary: #c2c2ca;
+  --text-muted: #9a9aa4;
+  /* Was #5c5c66 — only 2.6:1 on an input. Every tier now clears WCAG AA
+     (4.5:1) against the darkest surface it is used on. */
+  --text-faint: #82828a;
+  --text-on-accent: #ffffff;
+
+  /* Ink accent + state */
+  --accent: #4d7cfe;
+  --accent-hover: #6f93ff;
+  --accent-press: #3a63d8;
+  /* Filled surfaces need a darker blue: white on #4d7cfe is only 3.7:1,
+     which fails for the small uppercase label on the primary button. */
+  --accent-strong: #456ee2;
+  --accent-strong-hover: #5480f0;
+  --accent-soft: rgba(77, 124, 254, 0.13);
+  --accent-ring: rgba(77, 124, 254, 0.5);
+
+  --online: #35c96a;
+  --idle: #e0a92e;
+  --dnd: #e2564f;
+  --offline: #5c5c66;
+
+  --danger: #e2564f;
+  --danger-hover: #ec6b64;
+  --danger-soft: rgba(226, 86, 79, 0.12);
+  --mention: #e0a92e;
+  --mention-soft: rgba(224, 169, 46, 0.1);
+  --success: #35c96a;
+
+  /* Shape — sharp. Corners are a whisper, not a statement. */
+  --r-xs: 2px;
+  --r-sm: 3px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --r-xl: 8px;
+  --r-full: 999px;
+
+  /* Depth — restrained; rules carry separation, not shadows. */
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.6);
+
+  /* Motion */
+  --fast: 100ms cubic-bezier(0.4, 0, 0.2, 1);
+  --normal: 160ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Metrics */
+  --titlebar-h: 34px;
+  --sidebar-w: 262px;
+  --members-w: 216px;
+
+  --font: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  /* The editorial label: small, uppercase, widely tracked. Used for every
+     section heading, byline and metadata run in the app. */
+  --label-size: 10.5px;
+  --label-tracking: 0.1em;
+  --label-weight: 700;
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg-app: #ffffff;
+  --bg-sidebar: #fbfbfa;
+  --bg-surface: #ffffff;
+  --bg-raised: #ffffff;
+  --bg-input: #f4f4f2;
+  --bg-overlay: rgba(20, 20, 24, 0.3);
+
+  --rule: rgba(17, 17, 20, 0.11);
+  --rule-strong: rgba(17, 17, 20, 0.22);
+  --rule-accent: rgba(29, 78, 216, 0.45);
+
+  --hover: rgba(17, 17, 20, 0.04);
+  --hover-strong: rgba(17, 17, 20, 0.07);
+  --active: rgba(17, 17, 20, 0.09);
+
+  --text: #111114;
+  --text-secondary: #3f3f46;
+  --text-muted: #5b5b64;
+  --text-faint: #6e6e77;
+
+  --accent: #1d4ed8;
+  --accent-hover: #1a44be;
+  --accent-press: #163aa0;
+  --accent-strong: #1d4ed8;
+  --accent-strong-hover: #1a44be;
+  --accent-soft: rgba(29, 78, 216, 0.09);
+  --accent-ring: rgba(29, 78, 216, 0.4);
+
+  --shadow-sm: 0 1px 0 rgba(17, 17, 20, 0.06);
+  --shadow-md: 0 4px 16px rgba(17, 17, 20, 0.1);
+  --shadow-lg: 0 18px 48px rgba(17, 17, 20, 0.18);
+
+  color-scheme: light;
+}

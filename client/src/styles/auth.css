@@ -1,0 +1,455 @@
+/* Auto margins rather than align-items:center — a centred flex item whose
+   content is taller than the viewport gets its top clipped and cannot be
+   scrolled to, which is exactly what happens in a small or scaled window. */
+.screen--auth {
+  display: flex;
+  padding: 32px;
+  overflow: auto;
+  /* Was see-through to the desktop, back when the window itself was
+     transparent (see main.js createWindow() for why that's gone) — a
+     scrollbar drawn down bare desktop read as a rendering fault rather than
+     as chrome. Kept hidden even on a plain background: the wheel still
+     scrolls, which only matters in a window too short for the card. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  position: relative;
+  background: var(--bg-app);
+}
+
+/* The card is the window here: dragging it moves the window, and the empty
+   space around it is not a handle — grabbing thin air to move something is
+   not obvious. */
+/* Keep the card's natural height: as a flex item it would otherwise be
+   squashed to fit a short window and quietly clip its own last line. */
+.screen--auth::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.auth {
+  flex: 0 0 auto;
+  margin: auto;
+  -webkit-app-region: drag;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 400px) minmax(0, 304px);
+  align-items: stretch;
+  width: 100%;
+  max-width: 736px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  /* Gradient rather than a flat fill: lighter at the top edge, so the card
+     catches the light from above and separates from the ground. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 42%),
+    var(--bg-surface);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 24px 70px rgba(0, 0, 0, 0.55),
+    0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* One-pixel highlight along the top edge — the classic "lit rim". */
+.auth::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent, rgba(255, 255, 255, 0.22) 22%, rgba(255, 255, 255, 0.22) 78%, transparent);
+  pointer-events: none;
+}
+
+.auth__panel {
+  padding: 38px 38px 30px;
+  border-right: 1px solid var(--rule);
+}
+
+.auth__mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-md);
+  margin-bottom: 24px;
+  background: linear-gradient(150deg, var(--accent-hover), var(--accent-strong));
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 6px 18px rgba(77, 124, 254, 0.35);
+}
+
+.auth__title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.auth__subtitle {
+  margin-top: 8px;
+  padding-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.auth__form {
+  margin-top: 26px;
+  padding-top: 26px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field__label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.field__row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.field__row .field__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.field__input {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: 13.5px;
+  transition:
+    border-color var(--fast),
+    background var(--fast),
+    box-shadow var(--fast);
+}
+
+.field__input::placeholder {
+  color: var(--text-faint);
+}
+
+.field__input:hover:not(:focus) {
+  border-color: var(--rule-strong);
+  background: var(--bg-app);
+}
+
+/* One focus treatment for both mouse and keyboard: a tinted ring plus a
+   brighter border, which also survives Windows high-contrast mode. */
+.field__input:focus,
+.field__input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-app);
+  box-shadow:
+    0 0 0 3px var(--accent-ring),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+
+.field__input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.field__input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.field__hint {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-faint);
+}
+
+.field__hint code {
+  background: var(--bg-input);
+  border: 1px solid var(--rule);
+  padding: 1px 4px;
+  border-radius: var(--r-xs);
+}
+
+.field__reveal {
+  flex: 0 0 auto;
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  transition: border-color var(--fast), color var(--fast);
+}
+
+.field__reveal:hover {
+  border-color: var(--rule-strong);
+  color: var(--text);
+}
+
+.auth__advanced {
+  border-top: 1px solid var(--rule);
+  padding-top: 14px;
+}
+
+.auth__advanced > summary {
+  cursor: pointer;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  user-select: none;
+}
+
+.auth__advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.auth__advanced > summary::before {
+  content: "+";
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-faint);
+}
+
+.auth__advanced[open] > summary::before {
+  content: "\2212";
+}
+
+.auth__advanced > summary:hover {
+  color: var(--text);
+}
+
+.auth__advanced .field {
+  margin-top: 14px;
+}
+
+.auth__error {
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--danger-soft);
+  border: 1px solid rgba(226, 86, 79, 0.3);
+  border-left: 2px solid var(--danger);
+  color: #ff9c96;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.auth__switch {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.auth__status {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  min-height: 14px;
+}
+
+.link {
+  color: var(--accent-hover);
+  font-weight: 650;
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule-accent);
+}
+
+.link:hover {
+  border-bottom-color: var(--accent-hover);
+}
+
+/* The aside reads as a masthead sidebar: rules, kickers, short standfirsts. */
+.auth__aside {
+  padding: 34px 28px;
+  background: var(--bg-sidebar);
+}
+
+.auth__aside h2 {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 18px;
+}
+
+.auth__aside ul {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.auth__aside strong {
+  display: block;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+/* The two-column card is 736px, so it fits comfortably above ~800px. The old
+   860px cut-off dropped the panel in windows that had room for it — which is
+   most Windows machines once display scaling is taken into account. */
+@media (max-width: 800px) {
+  .auth {
+    grid-template-columns: minmax(0, 420px);
+    max-width: 420px;
+  }
+
+  .auth__panel {
+    border-right: 0;
+  }
+
+  .auth__aside {
+    display: none;
+  }
+}
+
+/* Forgot-password link sits quietly under the password field. */
+.auth__forgot {
+  margin: -4px 0 2px;
+  text-align: right;
+  font-size: 12.5px;
+}
+
+/* The one-time recovery codes, shown once after sign-up. */
+.reccodes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: .04em;
+  text-align: center;
+}
+.reccodes__code { padding: 4px 0; }
+.reccodes__warn {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+}
+.reccodes__ack {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+/* Everything you can actually operate opts back out of the drag region. */
+.auth input,
+.auth textarea,
+.auth button,
+.auth a,
+.auth .link,
+.auth label {
+  -webkit-app-region: no-drag;
+}
+
+/* Minimise and close, sitting on the card because the title bar is hidden
+   while signed out. */
+.auth__window {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  display: flex;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+/* Short windows — which is most Windows machines once display scaling is
+   applied — spend their height on the card rather than on the surround. */
+@media (max-height: 720px) {
+  .screen--auth { padding: 12px; }
+}
+
+/* Early Supporter nudge on the sign-up screen */
+.auth__early {
+  margin-top: 10px;
+  font-size: 10.5px;
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--mention);
+}
+
+/* --- ban appeal, offered under the error when a suspended account signs in --- */
+.appeal {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+.appeal__hint { margin: 0; font-size: 12.5px; color: var(--text-secondary); }
+.appeal__hint--sent { color: var(--success, #46d484); }
+.appeal__text {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  outline: none;
+}
+.appeal__text:focus { border-color: var(--accent); }
+.appeal .btn { align-self: flex-end; }
+
+.appeal__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.appeal__foot .btn { align-self: auto; }
+.appeal__note { margin: 0; font-size: 12px; color: var(--text-muted); }
+.appeal__note--err { color: var(--danger, #ff6b7d); }
+
+.auth__legal { margin: 10px 0 0; font-size: 11.5px; color: var(--text-faint); text-align: center; line-height: 1.5; }
+.auth__legal a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; }
+.auth__legal a:hover { color: var(--text); }

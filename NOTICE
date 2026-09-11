@@ -1,0 +1,11 @@
+Voxara desktop app, bot SDK and examples
+Copyright (c) 2026 Voxara
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy
+of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+The name "Voxara", the Voxara logo and the voxaraspace.com domain are
+trademarks of Voxara. The Apache License does not grant permission to use
+them (section 6). A modified build must not present itself as Voxara or
+connect to the Voxara service while claiming to be the official app.
