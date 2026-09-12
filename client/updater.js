@@ -79,6 +79,8 @@ function httpBase(serverUrl) {
 // scripts/release.js). Serial beats version string: see release.js.
 let localSerial = 0;
 try { localSerial = Number(require('./package.json').buildSerial) || 0; } catch { localSerial = 0; }
+// Test hook for scripts/release-check.js, which runs this file as an older build would.
+if (process.env.PULSE_UPDATER_LOCAL_SERIAL) localSerial = Number(process.env.PULSE_UPDATER_LOCAL_SERIAL) || 0;
 function manifestIsNewer(manifest) {
   const remote = Number(manifest?.serial);
   if (Number.isFinite(remote) && remote > 0 && localSerial > 0) return remote > localSerial;
