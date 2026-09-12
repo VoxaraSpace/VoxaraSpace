@@ -604,6 +604,7 @@
 .badge--developer   { color: #a78bfa; border-color: color-mix(in srgb, #a78bfa 45%, transparent); }
 .badge--staff       { color: #f87171; border-color: color-mix(in srgb, #f87171 45%, transparent); }
 .badge--moderator   { color: #38bdf8; border-color: color-mix(in srgb, #38bdf8 45%, transparent); }
+.badge--beta        { color: #fbbf24; border-color: color-mix(in srgb, #fbbf24 45%, transparent); }
 .badge--bug         { color: #4ade80; border-color: color-mix(in srgb, #4ade80 45%, transparent); }
 .badge--contributor { color: #2dd4bf; border-color: color-mix(in srgb, #2dd4bf 45%, transparent); }
 .badge--translator  { color: #e879f9; border-color: color-mix(in srgb, #e879f9 45%, transparent); }

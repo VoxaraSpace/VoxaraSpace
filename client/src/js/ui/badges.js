@@ -22,12 +22,14 @@ const GLYPHS = {
   heart:  'M12 20s-7-4.5-9-9c-1.2-2.8.6-6 3.7-6 1.9 0 3.4 1 4.3 2.6C11.9 6 13.4 5 15.3 5c3.1 0 4.9 3.2 3.7 6-2 4.5-7 9-7 9z',
   bolt:   'M13 2L5 13h5l-1 9 8-11h-5z',
   cards:  'M12 3l8 4-8 4-8-4zM4 12l8 4 8-4M4 17l8 4 8-4',
+  flask:  'M9 3h6M10 3v6l-5.5 9.5A2 2 0 006.2 21h11.6a2 2 0 001.7-2.5L14 9V3M8 15h8',
 };
 
 export const BADGES = {
   developer:   { label: 'Developer', class: 'badge--developer', glyph: 'code', title: 'Builds Voxara' },
   staff:       { label: 'Staff', class: 'badge--staff', glyph: 'shield', title: 'Works at Voxara' },
   moderator:   { label: 'Moderator', class: 'badge--moderator', glyph: 'gavel', title: 'Keeps Voxara safe' },
+  beta:        { label: 'Beta Tester', class: 'badge--beta', glyph: 'flask', title: 'Tested Voxara before launch' },
   bug_hunter:  { label: 'Bug Hunter', class: 'badge--bug', glyph: 'bug', title: 'Squashed bugs in Voxara' },
   contributor: { label: 'Contributor', class: 'badge--contributor', glyph: 'branch', title: 'Contributed to Voxara' },
   translator:  { label: 'Translator', class: 'badge--translator', glyph: 'globe', title: 'Helped translate Voxara' },
@@ -39,7 +41,7 @@ export const BADGES = {
 };
 
 // Display order — most prestigious first.
-const ORDER = ['developer', 'staff', 'moderator', 'bug_hunter', 'contributor', 'translator', 'verified', 'bot', 'card_gold', 'card_silver', 'card_bronze'];
+const ORDER = ['developer', 'staff', 'moderator', 'beta', 'bug_hunter', 'contributor', 'translator', 'verified', 'bot', 'card_gold', 'card_silver', 'card_bronze'];
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 function glyphSvg(d) {
