@@ -45,6 +45,10 @@ function requestOptions(url) {
   if (!url.startsWith('https:')) return {};
   const { host } = new URL(url);
   const pinned = pinLookup(host);
+  // No pin recorded means a host with a real, publicly trusted certificate
+  // (production): Node's normal validation applies, which is the stricter
+  // check. A pin only exists for a self-issued certificate on localhost.
+  if (!pinned) return { agent: new https.Agent({ keepAlive: false }) };
   return {
     rejectUnauthorized: false,
     checkServerIdentity: () => undefined,
@@ -56,7 +60,6 @@ function requestOptions(url) {
       const cert = socket.getPeerCertificate();
       if (!cert || !cert.fingerprint256) return 'The server presented no certificate.';
       const offered = `sha256/${Buffer.from(cert.fingerprint256.replace(/:/g, ''), 'hex').toString('base64')}`;
-      if (!pinned) return 'This server has not been trusted yet. Sign in first.';
       if (offered !== pinned) return 'The server certificate does not match the pinned one.';
       return null;
     },
