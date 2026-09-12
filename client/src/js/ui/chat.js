@@ -1231,7 +1231,7 @@ async function forwardMessage(message, target) {
   toastSuccess(`Forwarded to ${target.label}.`);
 }
 
-function openForwardPicker(anchor, message) {
+export function openForwardPicker(anchor, message) {
   const targets = forwardTargets();
   const input = el('input', {
     class: 'switcher__input', type: 'text', placeholder: 'Forward to a friend…', 'aria-label': 'Forward to', autocomplete: 'off',

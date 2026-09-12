@@ -145,6 +145,7 @@ export function renderSidebar() {
   if (friendsMode) {
     renderRequestsGroup();
     renderFriendsGroup();
+    renderOtherDmsGroup();
     scrollHost.oncontextmenu = (event) => {
       if (event.target.closest('.row, .cathead, .request')) return;
       event.preventDefault();
@@ -440,6 +441,51 @@ function renderFriendsGroup() {
       }, icon('close'))));
   }
 
+  section.appendChild(body);
+  scrollHost.appendChild(section);
+}
+
+/**
+ * Conversations with people who are not (or are no longer) friends: a
+ * message from someone in a shared space, or a friend you removed. Without
+ * this section their unread count would show on the Friends tab with no
+ * row anywhere to open it from.
+ */
+function renderOtherDmsGroup() {
+  const rows = [];
+  for (const dm of store.dms.values()) {
+    const partnerId = store.dmPartnerId(dm.id);
+    if (!partnerId || partnerId === store.selfId || store.isFriend(partnerId)) continue;
+    const user = store.user(partnerId);
+    if (!user || user.webhook) continue;
+    if (!matches(user.displayName) && !matches(user.username)) continue;
+    rows.push({ dm, user });
+  }
+  if (!rows.length) return;
+  rows.sort((x, y) => store.unreadFor(y.dm.id) - store.unreadFor(x.dm.id));
+
+  const key = '@otherdms';
+  const collapsed = isCollapsed(key) && !store.filter;
+  const section = el('div', { class: `group${collapsed ? ' is-collapsed' : ''}` });
+  section.appendChild(groupHead({
+    name: 'Direct messages',
+    count: rows.length,
+    badge: rows.reduce((n, r) => n + store.unreadFor(r.dm.id), 0),
+    collapsed,
+    onToggle: () => toggleCollapsed(key),
+  }));
+  const body = el('div', { class: 'group__body' });
+  for (const { dm, user } of rows) {
+    body.appendChild(conversationRow({
+      id: dm.id,
+      label: user.displayName,
+      subtitle: user.deleted ? 'Deleted account' : 'Not a friend',
+      leading: avatar(user, { size: 'sm' }),
+      unread: store.unreadFor(dm.id),
+      onOpen: () => openConversation(dm.id),
+      onContext: (event) => openUserMenu(pointAnchor(event.clientX, event.clientY), user, { groups: [] }),
+    }));
+  }
   section.appendChild(body);
   scrollHost.appendChild(section);
 }

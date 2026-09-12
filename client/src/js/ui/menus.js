@@ -1,9 +1,9 @@
 import { el } from '../utils.js';
 import { icon } from '../icons.js';
 import { store } from '../state.js';
-import { leaveGuild, deleteGuild, deleteChannel, markRead, deleteCategory, openDm, blockUser, unblockUser, copyToClipboard, moveFriendToGroup, deleteFriendGroup, removeFriend, addFriend, timeoutMember, spaceEveryoneMuted, setSpaceEveryoneMuted, kickMember, banMember, deleteMessage, kickFromVoice, moveVoiceMember } from '../actions.js';
+import { leaveGuild, deleteGuild, deleteChannel, markRead, deleteCategory, openDm, blockUser, unblockUser, copyToClipboard, moveFriendToGroup, deleteFriendGroup, removeFriend, addFriend, timeoutMember, spaceEveryoneMuted, setSpaceEveryoneMuted, kickMember, banMember, deleteMessage, kickFromVoice, moveVoiceMember, setPinned, createThread, openConversation } from '../actions.js';
 import { peerAudioFor, setPeerAudio } from './call.js';
-import { startEditing } from './chat.js';
+import { startEditing, startReply, openForwardPicker } from './chat.js';
 import { openPopover, menuItem, menuSeparator, menuLabel, confirmDialog, openModal } from './overlay.js';
 import { toastError, toastSuccess } from './toast.js';
 import { showInviteModal, showChannelSettings, showChannelPermissions, showChannelWebhooks, showCreateChannel, showCategoryModal, showCategoryPermissions, showReportDialog, showFriendGroupModal, showAddFriend} from './modals.js';
@@ -409,7 +409,29 @@ export function openMessageMenu(anchor, message, { guild = null } = {}) {
   // Same rules as the hover toolbar and the server: you edit only your own
   // messages; you delete your own anywhere, and anyone's with manageMessages.
   const canDelete = isMine || (space ? canManage(space, 'manageMessages') : false);
+  const canPin = space ? canManage(space, 'manageMessages') : true;
   const items = [];
+
+  // The same actions as the hover toolbar, so a right-click never has less.
+  items.push(menuItem({ label: 'Reply', iconName: 'reply', onSelect: () => startReply(message) }));
+  if (space && store.channel(message.channelId)?.type !== 'thread') {
+    const hasThread = Boolean(message.threadId);
+    items.push(menuItem({
+      label: hasThread ? 'Open thread' : 'Reply in thread',
+      iconName: 'chat',
+      onSelect: async () => {
+        if (hasThread) { openConversation(message.threadId, { guildId: space.id }); return; }
+        const thread = await createThread(message.channelId, { messageId: message.id });
+        if (thread) openConversation(thread.id, { guildId: space.id });
+      },
+    }));
+  }
+  items.push(menuItem({ label: 'Forward', iconName: 'forward', onSelect: () => openForwardPicker(anchor, message) }));
+  if (canPin) {
+    const pinned = Boolean(message.pinnedAt);
+    items.push(menuItem({ label: pinned ? 'Unpin message' : 'Pin message', iconName: 'pin', onSelect: () => setPinned(message.channelId, message.id, !pinned) }));
+  }
+  items.push(menuSeparator());
 
   if (isMine) {
     items.push(menuItem({
