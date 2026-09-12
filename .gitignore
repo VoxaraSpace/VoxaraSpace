@@ -3,3 +3,15 @@ dist/
 *.log
 .DS_Store
 Thumbs.db
+
+# Private parts of Voxara: never in this repository, even by accident.
+server/
+deploy/
+scripts/
+staff/
+developers/
+.env
+.env.*
+*.pem
+*.key
+server-data/
