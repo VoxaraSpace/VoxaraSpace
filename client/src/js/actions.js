@@ -1312,4 +1312,10 @@ export async function changePassword(currentPassword, newPassword) {
   toastSuccess('Password changed. Other devices have been signed out.');
 }
 
+/** Revokes every session except this one. */
+export async function signOutEverywhere() {
+  const { closed } = await net.request('auth:logout-all');
+  toastSuccess(closed ? `Signed out of ${closed} other device${closed === 1 ? '' : 's'}. Saved sign-ins elsewhere no longer work.` : 'No other device was signed in. Saved sign-ins elsewhere no longer work.');
+}
+
 export { reportError };

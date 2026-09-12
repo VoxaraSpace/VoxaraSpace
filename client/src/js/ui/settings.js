@@ -1,7 +1,7 @@
 import { el, clear, initials } from '../utils.js';
 import { store } from '../state.js';
 import {
-  updateProfile, changePassword, uploadProfileImage, setPref, copyToClipboard,
+  updateProfile, changePassword, signOutEverywhere, uploadProfileImage, setPref, copyToClipboard,
   getBilling, exportMyData, linkSteam, unlinkSteam, fetchSteamProfile, PREF_DEFAULTS,
 } from '../actions.js';
 import { showGamingProfile } from './gaming.js';
@@ -283,6 +283,11 @@ function accountPane(pane, handle) {
         input: confirm,
       }),
       el('div', { class: 'settings__actions' }, change)),
+    section('Devices',
+      el('p', { class: 'field__hint' },
+        'Left yourself signed in somewhere, or lost a device? This signs out every other device and cancels their saved sign-ins. This one stays signed in.'),
+      el('div', { class: 'settings__actions' },
+        el('button', { class: 'btn', type: 'button', onClick: async (e) => { const b = e.currentTarget; b.disabled = true; try { await signOutEverywhere(); } catch (err) { toastError(err.message || 'Could not sign out other devices.'); } finally { b.disabled = false; } } }, 'Sign out of other devices'))),
     section('Delete account',
       el('p', { class: 'field__hint' },
         'Deleting your account removes your profile, pictures, every message you sent, your friendships and your bots. '

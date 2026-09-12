@@ -21,8 +21,6 @@ export function el(tag, props = {}, ...children) {
         if (prop.startsWith('--')) node.style.setProperty(prop, setting);
         else node.style[prop] = setting;
       }
-    } else if (key === 'html') {
-      node.innerHTML = value;
     } else if (key.startsWith('on') && typeof value === 'function') {
       node.addEventListener(key.slice(2).toLowerCase(), value);
     } else if (value === true) {
