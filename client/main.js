@@ -1315,10 +1315,14 @@ if (!app.requestSingleInstanceLock()) {
             kind: src.id.startsWith('screen') ? 'screen' : 'window',
             thumb: src.thumbnail.toDataURL(),
           }));
-          const onChosen = (_e, id) => {
+          const onChosen = (_e, id, opts) => {
             ipcMain.removeListener('screen:chosen', onChosen);
             const chosen = sources.find((s) => s.id === id);
-            callback(chosen ? { video: chosen } : undefined); // undefined = cancelled
+            if (!chosen) { callback(undefined); return; } // cancelled
+            // System audio ("what you hear") is captured as a loopback of the
+            // output device; Chromium offers that on Windows only.
+            const wantAudio = Boolean(opts && opts.audio) && process.platform === 'win32';
+            callback(wantAudio ? { video: chosen, audio: 'loopback' } : { video: chosen });
           };
           ipcMain.on('screen:chosen', onChosen);
           if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('screen:choose', list);

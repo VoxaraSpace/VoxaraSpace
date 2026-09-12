@@ -4,7 +4,7 @@
 import { el } from '../utils.js';
 import { icon } from '../icons.js';
 import { store } from '../state.js';
-import { net, desktop, mediaUrl } from '../client.js';
+import { net, desktop, mediaUrl, runtime, setSetting } from '../client.js';
 import { avatar } from './bits.js';
 import { toast } from './toast.js';
 
@@ -160,6 +160,9 @@ function makePeer(userId, initiator) {
   if (call.sharing && call.screenTrack) {
     peer.videoSender.replaceTrack(call.screenTrack).then(() => tuneVideoSender(peer.videoSender, { screen: true })).catch(() => {});
   }
+  if (call.sharing && call.screenAudioTrack) {
+    try { peer.screenAudioSender = pc.addTrack(call.screenAudioTrack, call.localStream); } catch { /* not sendable yet */ }
+  }
 
   pc.onicecandidate = (e) => { if (e.candidate) signal(userId, { type: 'ice', candidate: e.candidate }); };
   pc.ontrack = (e) => {
@@ -229,16 +232,20 @@ export async function startCall(userId, kind = 'audio') {
 
 /** Join a space's voice channel: a persistent call room shared by the channel. */
 export async function startVoiceChannel(channelId, channelName) {
+  let keepMuted = false;
   if (call) {
     if (call.voiceChannelId === channelId) { setCallView('full'); return; }
-    toast({ title: 'Already in a call', body: 'Leave it first to join this channel.', kind: 'info' });
-    return;
+    if (!call.voiceChannelId) { toast({ title: 'Already in a call', body: 'End the current call first.', kind: 'info' }); return; }
+    // Clicking another voice channel moves you there: leave this one and
+    // join the next, keeping your mute state (a share ends with the room).
+    keepMuted = Boolean(call.muted);
+    leaveCall();
   }
   try {
     const localStream = await getMedia(false);
     call = {
       callId: `voice:${channelId}`, kind: 'audio', voiceChannelId: channelId, voiceChannelName: channelName,
-      state: 'connecting', localStream, muted: false, camOff: false, sharing: false, peers: new Map(),
+      state: 'connecting', localStream, muted: keepMuted, camOff: false, sharing: false, peers: new Map(),
       // No `view` — a space voice channel has no floating corner widget, so
       // renderInCall() shows nothing until you deliberately open the full view.
     };
@@ -405,6 +412,7 @@ function endLocal() {
     for (const [id] of call.peers || []) closePeer(id);
     for (const t of call.localStream?.getTracks() || []) t.stop();
     if (call.screenTrack) { try { call.screenTrack.stop(); } catch { /* gone */ } }
+    if (call.screenAudioTrack) { try { call.screenAudioTrack.stop(); } catch { /* gone */ } }
     dropAnalyser(store.selfId);
     if (call.audioCtx) { try { call.audioCtx.close(); } catch { /* already gone */ } call.audioCtx = null; }
   }
@@ -433,12 +441,25 @@ async function toggleScreen() {
   if (!call) return;
   if (call.sharing) { stopScreen(); return; }
   try {
-    const display = await navigator.mediaDevices.getDisplayMedia({
-      video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60, max: 60 } },
-      audio: false,
-    });
+    const videoWanted = { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60, max: 60 } };
+    // Audio is asked for up front; the picker decides whether it is actually
+    // included (main.js hands back a loopback track only when the person
+    // ticked "share audio" and the platform can). If the engine refuses the
+    // combination outright, ask again for video alone.
+    let display;
+    try { display = await navigator.mediaDevices.getDisplayMedia({ video: videoWanted, audio: true }); }
+    catch (err) { if (err?.name === 'NotAllowedError' || err?.name === 'AbortError') throw err; display = await navigator.mediaDevices.getDisplayMedia({ video: videoWanted, audio: false }); }
     const track = display.getVideoTracks()[0];
     if (!track) return;
+    const audioTrack = display.getAudioTracks()[0] || null;
+    call.screenAudioTrack = audioTrack;
+    if (audioTrack) {
+      audioTrack.onended = () => { if (call?.screenAudioTrack === audioTrack) dropScreenAudio(); };
+      for (const [userId, peer] of call.peers) {
+        try { peer.screenAudioSender = peer.pc.addTrack(audioTrack, call.localStream); } catch { continue; }
+        renegotiate(peer, userId);
+      }
+    }
     // Sharp text over smooth motion: the encoder keeps detail and lets the
     // frame rate give first when bandwidth is short.
     try { track.contentHint = 'detail'; } catch { /* older engine */ }
@@ -459,9 +480,22 @@ async function toggleScreen() {
     if (err?.name !== 'NotAllowedError' && err?.name !== 'AbortError') toast({ title: 'Could not share your screen', kind: 'error' });
   }
 }
+/** Stops sending the screen's audio (the share itself may continue). */
+function dropScreenAudio() {
+  if (!call?.screenAudioTrack) return;
+  try { call.screenAudioTrack.stop(); } catch { /* gone */ }
+  call.screenAudioTrack = null;
+  for (const [userId, peer] of call.peers) {
+    if (!peer.screenAudioSender) continue;
+    try { peer.pc.removeTrack(peer.screenAudioSender); } catch { /* closed */ }
+    peer.screenAudioSender = null;
+    renegotiate(peer, userId);
+  }
+}
 async function stopScreen() {
   if (!call?.sharing) return;
   try { call.screenTrack?.stop(); } catch { /* gone */ }
+  dropScreenAudio();
   call.sharing = false;
   for (const peer of call.peers.values()) {
     peer.videoSender?.replaceTrack(call.cameraTrack || null).then(() => tuneVideoSender(peer.videoSender, { screen: false })).catch(() => {});
@@ -1144,7 +1178,16 @@ function showScreenPicker(sources) {
   clearScreenPicker();
   let selectedId = null;
 
-  const finish = (id) => { stopPreview(); try { window.pulse.screen.choose(id); } catch { /* no bridge */ } clearScreenPicker(); };
+  const audioBox = el('input', { type: 'checkbox', id: 'screenAudio' });
+  const canLoopback = runtime.platform === 'win32';
+  audioBox.checked = canLoopback && store.ui.shareAudio !== false;
+  audioBox.disabled = !canLoopback;
+  const finish = (id) => {
+    stopPreview();
+    if (id) { store.ui.shareAudio = audioBox.checked; setSetting('shareAudio', audioBox.checked); }
+    try { window.pulse.screen.choose(id, { audio: audioBox.checked }); } catch { /* no bridge */ }
+    clearScreenPicker();
+  };
 
   const previewVideo = el('video', { class: 'screenpick__video', autoplay: '', muted: '', playsinline: '' });
   previewVideo.muted = true;
@@ -1184,7 +1227,8 @@ function showScreenPicker(sources) {
         windows.length ? el('div', { class: 'screenpick__label' }, 'Windows') : null,
         windows.length ? el('div', { class: 'screenpick__grid' }, windows.map(tileFor)) : null),
       el('div', { class: 'screenpick__foot' },
-        el('span', { class: 'screenpick__hint' }, 'Click a source to preview it, then Share.'),
+        el('label', { class: 'screenpick__audio', for: 'screenAudio', title: canLoopback ? '' : 'Sharing what your computer plays is available on Windows.' },
+          audioBox, el('span', {}, canLoopback ? 'Share audio (what your computer plays)' : 'Share audio: Windows only')),
         el('div', { class: 'screenpick__btns' },
           el('button', { class: 'btn btn--sm', type: 'button', onClick: () => finish(null) }, 'Cancel'),
           shareBtn))));

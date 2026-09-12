@@ -99,7 +99,8 @@ contextBridge.exposeInMainWorld('pulse', {
       return () => ipcRenderer.removeListener('screen:choose', listener);
     },
     // id of the chosen source, or null to cancel.
-    choose: (id) => ipcRenderer.send('screen:chosen', id),
+    // id of the chosen source (null cancels) and { audio: true } to include what the computer is playing.
+    choose: (id, opts) => ipcRenderer.send('screen:chosen', id, opts || {}),
     // a fresh preview snapshot (data URL) of one source.
     preview: (id) => ipcRenderer.invoke('screen:preview', id),
   },

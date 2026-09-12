@@ -1199,6 +1199,7 @@ export const PREF_DEFAULTS = {
   pushToTalk: '',                // voice: a key name (e.g. "Alt" or "F9"); empty = open mic
   gameOverlay: 'game',           // in-game voice overlay: game (only while a game is running) | always (any call) | off
   overlayCorner: 'top-left',     // where the overlay sits: top-left | top-right | bottom-left | bottom-right
+  shareAudio: true,              // screen share: include what the computer plays (Windows)
 };
 
 // Focus Mode — a private "do not disturb" that truly silences everything,
