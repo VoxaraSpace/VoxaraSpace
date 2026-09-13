@@ -249,6 +249,14 @@ class AppStore extends Emitter {
     this.emit('threads', { threadId: thread.id, thread });
   }
 
+  removeThread(threadId) {
+    const thread = this.threads.get(threadId) || null;
+    this.threads.delete(threadId);
+    this.messages.delete(threadId);
+    this.unreads.delete(threadId);
+    this.emit('threads', { threadId, thread: null, removed: true, parentChannelId: thread?.parentChannelId || null });
+  }
+
   dm(id) {
     return this.dms.get(id) || null;
   }

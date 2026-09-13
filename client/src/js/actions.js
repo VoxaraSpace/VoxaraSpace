@@ -197,6 +197,18 @@ export async function moveVoiceMember(channelId, userId) {
   }
 }
 
+/** Delete a thread or forum post and everything in it. */
+export async function deleteThread(threadId) {
+  try {
+    await net.request('thread:delete', { threadId });
+    store.removeThread(threadId);
+    return true;
+  } catch (err) {
+    reportError(err, 'Could not delete that post.');
+    return false;
+  }
+}
+
 export async function archiveThread(threadId, archived = true) {
   try {
     const result = await net.request('thread:archive', { threadId, archived });

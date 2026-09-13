@@ -450,6 +450,7 @@ export function renderMessages({ jump = false } = {}) {
 
   // scrollToBottom hides the button itself once the frame lands; checking now
   // would only make it flash.
+  rewatchGrowth();
   if (jump) { scrollToBottom(); stickBottomThroughImageLoads(); }
   else updateJumpVisibility();
 }
@@ -532,10 +533,14 @@ function appendMessage(message) {
 
   if (shouldShowDayDivider(previous, message)) {
     scrollHost.appendChild(el('div', { class: 'divider' }, formatDayLabel(message.createdAt)));
-    scrollHost.appendChild(messageNode(message, null));
+    const node = messageNode(message, null);
+    scrollHost.appendChild(node);
+    watchGrowth(node);
     return;
   }
-  scrollHost.appendChild(messageNode(message, previous));
+  const node = messageNode(message, previous);
+  scrollHost.appendChild(node);
+  watchGrowth(node);
 }
 
 /** Messages from blocked people, revealed one at a time on request. */
@@ -1431,6 +1436,7 @@ function noConversationState() {
 
 function wireScroll() {
   scrollHost.addEventListener('scroll', () => {
+    pinnedToBottom = isNearBottom();
     updateJumpVisibility();
     if (store.ui.autoLoadOlder && scrollHost.scrollTop < 120 && !searchQuery) void loadMoreHistory();
     if (isNearBottom() && store.view.channelId) markRead(store.view.channelId);
@@ -1458,7 +1464,26 @@ function isNearBottom() {
   return scrollHost.scrollHeight - scrollHost.scrollTop - scrollHost.clientHeight < NEAR_BOTTOM_PX;
 }
 
+// "Pinned" means the reader is at the latest message and wants to stay there.
+// Anything that changes the height of what is on screen afterwards (an image
+// or preview loading, a font swapping in, the composer growing) would
+// otherwise leave the view a little short of the bottom; while pinned, every
+// such change re-pins. Scrolling up unpins; the jump button or a fresh
+// conversation pins again.
+let pinnedToBottom = true;
+const growthObserver = typeof ResizeObserver === 'function'
+  ? new ResizeObserver(() => { if (pinnedToBottom && scrollHost) scrollHost.scrollTop = scrollHost.scrollHeight; })
+  : null;
+function watchGrowth(node) { if (growthObserver && node) growthObserver.observe(node); }
+function rewatchGrowth() {
+  if (!growthObserver || !scrollHost) return;
+  growthObserver.disconnect();
+  growthObserver.observe(scrollHost);
+  for (const child of scrollHost.children) growthObserver.observe(child);
+}
+
 export function scrollToBottom() {
+  pinnedToBottom = true;
   requestAnimationFrame(() => {
     scrollHost.scrollTop = scrollHost.scrollHeight;
     showJumpButton(false);
@@ -2095,12 +2120,23 @@ function attachmentsFor(message) {
       // Photosensitivity: never autoplay a GIF — gate it behind a click.
       wrap.appendChild(gifGate(src, item.name));
     } else if (store.ui.inlineImages && String(item.type).startsWith('image/')) {
+      // The upload recorded the picture's size, so the box is laid out at
+      // its final dimensions before a byte arrives: nothing below it moves
+      // when it loads, and the view stays where it was scrolled to.
+      const img = el('img', { src, alt: item.name, loading: 'lazy' });
+      const w = Number(item.width), h = Number(item.height);
+      if (w > 0 && h > 0) {
+        const scale = Math.min(420 / w, 320 / h, 1);
+        img.width = Math.round(w * scale); img.height = Math.round(h * scale);
+        img.style.aspectRatio = `${w} / ${h}`;
+        img.style.height = 'auto';
+      }
       const figure = el('button', {
         class: 'attachment attachment--image',
         type: 'button',
         title: `${item.name} — click to open`,
         onClick: () => desktop.openExternal(src),
-      }, el('img', { src, alt: item.name, loading: 'lazy' }));
+      }, img);
       wrap.appendChild(figure);
     } else {
       wrap.appendChild(el('button', {

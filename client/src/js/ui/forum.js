@@ -7,10 +7,10 @@
 import { el, clear, initials } from '../utils.js';
 import { icon } from '../icons.js';
 import { store } from '../state.js';
-import { openModal } from './overlay.js';
+import { openModal, openPopover, menuItem, menuLabel, menuSeparator, confirmDialog, pointAnchor } from './overlay.js';
 import { labelledField, textInput, avatar } from './bits.js';
 import { toastError } from './toast.js';
-import { openConversation, createThread, fetchThreads, sendMessage, updateChannel, setThreadTags } from '../actions.js';
+import { openConversation, createThread, fetchThreads, sendMessage, updateChannel, setThreadTags, deleteThread } from '../actions.js';
 import { canManage } from './spacesettings.js';
 
 const TAG_COLORS = ['#5b6cff', '#22cc88', '#e9724c', '#a866dc', '#e8b93b', '#39b8d6', '#e0576f', '#8b93a7'];
@@ -112,8 +112,13 @@ export async function renderForumPane(channelId) {
   // Keep the list live: a post created, renamed, locked or archived by
   // anyone shows up without reopening the channel. The listener retires
   // itself once this pane has been replaced.
-  const off = store.on('threads', ({ thread }) => {
+  const off = store.on('threads', ({ thread, threadId, removed }) => {
     if (!wrap.isConnected) { off(); return; }
+    if (removed) {
+      const at = threads.findIndex((t) => t.id === threadId);
+      if (at !== -1) { threads.splice(at, 1); renderList(threads); }
+      return;
+    }
     if (!thread || thread.parentChannelId !== channelId) return;
     const at = threads.findIndex((t) => t.id === thread.id);
     if (at === -1) threads.push(thread); else threads[at] = thread;
@@ -152,12 +157,39 @@ function postCard(channel, thread) {
           return tag ? el('span', { class: 'role-tag', style: { color: tag.color, borderColor: tag.color } }, tag.label) : null;
         })) : null));
   card.addEventListener('click', () => openConversation(thread.id, { guildId: channel.guildId }));
-  // Right-click: the post's own tags, for its author and for moderators.
+  // Right-click: tags and deletion, for the post's author and for moderators.
   if (canEditPostTags(channel, thread)) {
-    card.title = 'Right-click to edit tags';
-    card.addEventListener('contextmenu', (event) => { event.preventDefault(); showEditTagsModal(thread); });
+    card.title = 'Right-click for options';
+    card.addEventListener('contextmenu', (event) => { event.preventDefault(); openPostMenu(pointAnchor(event.clientX, event.clientY), channel, thread); });
   }
   return card;
+}
+
+/** The right-click menu on a forum post. */
+export function openPostMenu(anchor, channel, thread) {
+  const guild = store.guildOfChannel(channel.id);
+  const isMine = thread.createdBy === store.selfId;
+  const moderator = Boolean(guild) && canManage(guild, 'manageMessages');
+  const items = [
+    menuLabel(thread.name),
+    menuItem({ label: 'Open post', iconName: 'chat', onSelect: () => openConversation(thread.id, { guildId: channel.guildId }) }),
+    menuItem({ label: 'Edit tags', iconName: 'tag', onSelect: () => showEditTagsModal(thread) }),
+  ];
+  if (isMine || moderator) {
+    items.push(menuSeparator());
+    items.push(menuItem({
+      label: 'Delete post', iconName: 'trash', danger: true,
+      onSelect: async () => {
+        const ok = await confirmDialog({
+          title: `Delete "${thread.name}"?`,
+          message: 'The post and every reply in it are removed for everyone. This cannot be undone.',
+          confirmLabel: 'Delete post', danger: true,
+        });
+        if (ok) deleteThread(thread.id);
+      },
+    }));
+  }
+  openPopover(anchor, items);
 }
 
 /** Whether you may change a forum post's tags: you wrote it, or you moderate here. */

@@ -447,6 +447,13 @@ function handleServerEvent({ op, data }) {
       break;
 
     case 'thread:new':
+    case 'thread:delete': {
+      const wasOpen = store.view.channelId === data.threadId;
+      store.removeThread(data.threadId);
+      if (wasOpen) void openConversation(data.parentChannelId, { guildId: data.guildId });
+      break;
+    }
+
     case 'thread:update':
       store.upsertThread(data.thread);
       // A lock/unlock on the open thread changes its header and whether you can type.
