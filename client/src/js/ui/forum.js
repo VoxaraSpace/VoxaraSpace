@@ -11,6 +11,7 @@ import { openModal } from './overlay.js';
 import { labelledField, textInput, avatar } from './bits.js';
 import { toastError } from './toast.js';
 import { openConversation, createThread, fetchThreads, sendMessage, updateChannel } from '../actions.js';
+import { canManage } from './spacesettings.js';
 
 const TAG_COLORS = ['#5b6cff', '#22cc88', '#e9724c', '#a866dc', '#e8b93b', '#39b8d6', '#e0576f', '#8b93a7'];
 
@@ -45,6 +46,15 @@ export async function renderForumPane(channelId) {
     type: 'button',
     onClick: () => showNewPostModal(channelId),
   }, icon('plus'), 'New Post');
+  // Curating the tag list is moderation work: moderators get the button
+  // here, not only people who can edit the channel itself.
+  const guild = store.guildOfChannel(channelId);
+  if (guild && (canManage(guild, 'manageMessages') || canManage(guild, 'manageChannels'))) {
+    toolbar.appendChild(el('button', {
+      class: 'btn btn--sm', type: 'button', title: 'Add, rename or remove the tags posts can carry',
+      onClick: () => showTagManager(store.channel(channelId) || channel),
+    }, icon('tag'), 'Manage tags'));
+  }
   toolbar.append(search, newPostBtn);
   wrap.appendChild(toolbar);
 
@@ -64,7 +74,7 @@ export async function renderForumPane(channelId) {
 
   function renderTagBar(threads) {
     clear(tagBar);
-    const tags = channel.availableTags || [];
+    const tags = (store.channel(channelId) || channel).availableTags || [];
     if (!tags.length) return;
     tagBar.appendChild(el('button', {
       class: `forum__tagchip${activeTagFilter === null ? ' is-active' : ''}`,
@@ -89,7 +99,7 @@ export async function renderForumPane(channelId) {
         threads.length ? 'No posts match.' : 'No posts yet — be the first.'));
       return;
     }
-    for (const thread of filtered) list.appendChild(postCard(channel, thread));
+    for (const thread of filtered) list.appendChild(postCard(store.channel(channelId) || channel, thread));
   }
 
   const threads = await fetchThreads(channelId);
@@ -107,6 +117,14 @@ export async function renderForumPane(channelId) {
     if (!thread || thread.parentChannelId !== channelId) return;
     const at = threads.findIndex((t) => t.id === thread.id);
     if (at === -1) threads.push(thread); else threads[at] = thread;
+    renderList(threads);
+  });
+  // The tag list lives on the channel; an edit (yours or a moderator's)
+  // arrives as a channel update, so the filter chips and cards follow it.
+  const offGuilds = store.on('guilds', () => {
+    if (!wrap.isConnected) { offGuilds(); return; }
+    if (activeTagFilter && !((store.channel(channelId)?.availableTags) || []).some((t) => t.id === activeTagFilter)) activeTagFilter = null;
+    renderTagBar(threads);
     renderList(threads);
   });
 }
@@ -190,6 +208,15 @@ export function showNewPostModal(channelId) {
   handle.modal.appendChild(el('div', { class: 'modal__foot' },
     el('button', { class: 'btn btn--ghost', type: 'button', onClick: () => handle.close() }, 'Cancel'),
     post));
+}
+
+/** The tag manager on its own, for moderators who cannot open channel settings. */
+export function showTagManager(channel) {
+  openModal({
+    title: `Tags for #${channel.name}`,
+    subtitle: 'Posts can carry any of these. Changes save as you type.',
+    body: buildTagManager(channel),
+  });
 }
 
 /** Tag manager shown in channel settings for a forum channel. */
