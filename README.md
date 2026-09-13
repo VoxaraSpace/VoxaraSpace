@@ -8,7 +8,7 @@ data, build it themselves, and report problems.
 - Source: https://github.com/VoxaraSpace/VoxaraSpace
 - Website and downloads: https://voxaraspace.com
 - Bot documentation: https://voxaraspace.com/developers/docs/
-- Security reports: security@voxaraspace.com (see SECURITY.md)
+- Security reports: support@voxaraspace.com (see SECURITY.md)
 
 ## What is here
 
@@ -52,7 +52,7 @@ files and the message database are encrypted at rest on the server. Messages
 are not end to end encrypted: the server decrypts them to deliver them, and
 the privacy policy at https://voxaraspace.com/legal/ says so plainly.
 
-Found something? Please read SECURITY.md and write to security@voxaraspace.com
+Found something? Please read SECURITY.md and write to support@voxaraspace.com
 rather than opening a public issue.
 
 ## Licence

@@ -1,6 +1,6 @@
 # Reporting a security problem
 
-Write to **security@voxaraspace.com**. Include what you found, how to
+Write to **support@voxaraspace.com**. Include what you found, how to
 reproduce it, and which build (Settings, About) you were running. Please do
 not open a public issue for anything that could be used against people
 before it is fixed.
