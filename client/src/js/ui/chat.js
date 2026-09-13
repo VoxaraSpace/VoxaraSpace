@@ -657,7 +657,15 @@ function messageNode(message, previous) {
       }, '(edited)'));
     }
     if (searchQuery) highlightMatches(body, searchQuery);
-    if (message.content) content.appendChild(body);
+    // A message that is nothing but a GIF link (what the GIF button sends)
+    // shows the GIF, not the address. It loads through the server's proxy so
+    // the GIF host never sees the reader; the photosensitivity gate applies.
+    const gifUrl = gifOnlyUrl(message.content);
+    if (gifUrl && store.ui.inlineImages) {
+      const src = mediaUrl(`/gif-proxy/${toBase64Url(gifUrl)}`);
+      content.appendChild(el('div', { class: 'gifmsg' }, reduceFlashing() ? gifGate(src, 'GIF') : el('img', { class: 'gifmsg__img', src, alt: 'GIF', loading: 'lazy' })));
+      if (message.editedAt) content.appendChild(el('span', { class: 'msg__edited' }, '(edited)'));
+    } else if (message.content) content.appendChild(body);
 
     const attached = attachmentsFor(message);
     if (attached) content.appendChild(attached);
@@ -667,7 +675,7 @@ function messageNode(message, previous) {
     // An invite link becomes a card (name, members, Join) instead of a plain preview.
     const inviteCodes = [...new Set([...String(message.content || '').matchAll(/https?:\/\/[^\s<]+\/(?:invite|join)\/([A-Za-z0-9-]{4,16})/gi)].map((m) => m[1].toUpperCase()))].slice(0, 3);
     for (const code of inviteCodes) content.appendChild(inviteCard(code));
-    if (Array.isArray(message.embeds)) {
+    if (Array.isArray(message.embeds) && !gifUrl) {
       for (const embed of message.embeds) { if (inviteCodes.length && /\/(?:invite|join)\//i.test(embed.url || '')) continue; content.appendChild(embedCard(embed)); }
     }
 
@@ -736,6 +744,17 @@ function reduceFlashing() {
 }
 
 /** A click-to-play gate for a full-size animated image (no autoplay). */
+/** The GIF address if the whole message is one GIF link from a known host, else null. */
+const GIF_HOSTS = /^(media\d*\.giphy\.com|i\.giphy\.com|media\.tenor\.com|c\.tenor\.com)$/i;
+function gifOnlyUrl(content) {
+  const text = String(content || '').trim();
+  if (!/^https:\/\/\S+$/.test(text)) return null;
+  try { const u = new URL(text); return GIF_HOSTS.test(u.hostname) && /\.(gif|webp)$/i.test(u.pathname) ? text : null; } catch { return null; }
+}
+function toBase64Url(text) {
+  return btoa(unescape(encodeURIComponent(text))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 function gifGate(src, alt) {
   const holder = el('button', {
     class: 'gif-gate', type: 'button',

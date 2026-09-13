@@ -3849,10 +3849,10 @@ body.has-theme-bg .chat { background: transparent; }
 
 /* ---- GIF picker ---- */
 .composer__giflabel { font-size: 10px; font-weight: 800; letter-spacing: .06em; }
-.gifpick { width: 360px; max-height: 420px; display: flex; flex-direction: column; gap: 8px; padding: 10px; }
+.gifpick { width: 360px; height: min(420px, 60vh); display: flex; flex-direction: column; gap: 8px; padding: 10px; }
 .gifpick__search { height: 34px; }
 .gifpick__status { font-size: 12.5px; color: var(--text-muted); padding: 6px 2px; }
-.gifpick__grid { overflow-y: auto; columns: 2; column-gap: 6px; }
+.gifpick__grid { flex: 1; min-height: 0; overflow-y: auto; columns: 2; column-gap: 6px; }
 .gifpick__item { display: block; width: 100%; margin-bottom: 6px; border-radius: 8px; cursor: pointer; background: var(--bg-raised); break-inside: avoid; }
 .gifpick__item:hover { outline: 2px solid var(--accent); }
 
