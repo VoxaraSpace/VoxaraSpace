@@ -96,7 +96,7 @@ export class Net extends Emitter {
 
       if (!this.token) return;
       try {
-        const ready = await this.request('auth:resume', { token: this.token });
+        const ready = await this.request('auth:resume', { token: this.token, client: this.clientInfo || undefined });
         this.emit('resumed', ready);
       } catch (err) {
         if (err.code === 'bad_session') {

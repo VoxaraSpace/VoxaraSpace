@@ -25,6 +25,7 @@ let cache = {};
 export let runtime = {
   platform: 'win32',
   version: '1.0.0',
+  serial: 0,
   isDev: false,
   defaultServerUrl: 'wss://voxaraspace.com',
 };
@@ -44,6 +45,9 @@ export async function loadRuntime() {
   runtime = { ...runtime, ...config };
   cache = config.settings || {};
   return runtime;
+  // The build this copy is, sent with every sign-in so the server can refuse
+  // builds below its security floor.
+  net.clientInfo = { version: runtime.version, serial: Number(runtime.serial) || 0, platform: runtime.platform };
 }
 
 export function getSetting(key, fallback = null) {
@@ -153,6 +157,8 @@ export const desktop = {
     install: () => bridge?.updates.install() ?? Promise.resolve({ status: 'unsupported' }),
     version: () => bridge?.updates.version() ?? Promise.resolve(''),
     changelog: () => bridge?.updates.changelog() ?? Promise.resolve({ moreUrl: '', entries: [] }),
+    versions: () => bridge?.updates.versions?.() ?? Promise.resolve({ current: { version: runtime.version, serial: 0 }, supported: false, history: [] }),
+    rollback: (serial) => bridge?.updates.rollback?.(serial) ?? Promise.resolve({ status: 'unsupported' }),
     onProgress: (cb) => bridge?.updates.onProgress(cb) ?? (() => {}),
     onAvailable: (cb) => bridge?.updates.onAvailable(cb) ?? (() => {}),
   },

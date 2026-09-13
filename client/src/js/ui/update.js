@@ -1,6 +1,6 @@
 import { el } from '../utils.js';
 import { icon } from '../icons.js';
-import { openModal } from './overlay.js';
+import { confirmDialog, openModal } from './overlay.js';
 import { toastSuccess, toastError } from './toast.js';
 
 /**
@@ -22,6 +22,32 @@ export function initUpdates(desktop) {
 }
 
 const DATE_FMT = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+/**
+ * Switch to another build the server offers (older or newer). Same download
+ * and checksum path as an update; the app restarts into the chosen build.
+ */
+export async function switchVersionUI(entry) {
+  if (!desk?.updates) return;
+  const going = entry.newer ? 'Update to' : 'Go back to';
+  const ok = await confirmDialog({
+    title: `${going} Voxara ${entry.version}?`,
+    message: entry.newer
+      ? 'The app restarts to finish.'
+      : 'You will run an older version until you choose to update again. It stays on that version even as newer ones come out, unless a security update makes updating required. The app restarts to finish.',
+    confirmLabel: going.split(' ')[0] === 'Update' ? 'Update' : 'Go back',
+  });
+  if (!ok) return;
+  closeModal();
+  barFill = el('div', { class: 'update__fill' });
+  statusText = el('p', { class: 'update__status' }, 'Starting…');
+  modal = openModal({
+    title: `Switching to ${entry.version}`,
+    body: el('div', { class: 'update' }, el('div', { class: 'update__bar' }, barFill), statusText),
+  });
+  const result = await desk.updates.rollback(entry.serial).catch((err) => ({ status: 'error', message: err.message }));
+  if (result?.status === 'error') fail(result.message);
+}
 
 /** "What's new": the last few releases, with a link out to the full page. */
 export async function showWhatsNew() {

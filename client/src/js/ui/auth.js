@@ -245,6 +245,15 @@ function scheduleRetry() {
   }, retryDelay);
 }
 
+/** The server refused this build: fetch the current one and install it. */
+async function forceUpdate() {
+  try {
+    const r = await desktop.updates.check();
+    if (r?.status === 'available') await desktop.updates.install();
+    else showError('This version of Voxara is no longer supported. Download the current version from voxaraspace.com/download.');
+  } catch { /* the message above stays on screen */ }
+}
+
 /** A cheap liveness probe that does not disturb the real connection. */
 function canReach(url) {
   return new Promise((resolve) => {
@@ -331,6 +340,7 @@ async function submit() {
     let ready;
     if (mode === 'register') {
       ready = await net.request('auth:register', {
+        client: net.clientInfo || undefined,
         username,
         displayName: fields.displayName.value.trim(),
         email: fields.email.value.trim(),
@@ -345,7 +355,7 @@ async function submit() {
         newPassword: password,
       });
     } else {
-      ready = await net.request('auth:login', { username, password });
+      ready = await net.request('auth:login', { username, password, client: net.clientInfo || undefined });
       // Two-factor: the password was right, now the code from the app.
       if (ready?.mfaRequired) {
         setStatus('');
@@ -380,6 +390,7 @@ async function submit() {
       fields.inviteCode.focus();
     }
     showError(err.message || 'Could not sign in.');
+    if (err.code === 'update_required') void forceUpdate();
     if (err.code === 'account_suspended' && mode === 'login') offerAppeal(username, password);
   } finally {
     setBusy(false);
@@ -395,7 +406,7 @@ export async function tryResume() {
   setStatus('Reconnecting…');
   try {
     await net.connect(url);
-    const ready = await net.request('auth:resume', { token });
+    const ready = await net.request('auth:resume', { token, client: net.clientInfo || undefined });
     net.token = token;
     setStatus('');
     onAuthenticated(ready);

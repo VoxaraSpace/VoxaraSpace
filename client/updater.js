@@ -35,6 +35,12 @@ function usePinStore(lookup) {
   pinLookup = typeof lookup === 'function' ? lookup : () => null;
 }
 
+// A rollback "hold": after going back on purpose, the newer build is not
+// offered again until a release newer than the one held off arrives, or a
+// security floor makes updating required. { serial, untilSerial } or null.
+let holdStore = { get: () => null, set: () => {} };
+function useHoldStore(store) { if (store && typeof store.get === 'function') holdStore = store; }
+
 /**
  * Node does not consult Chromium's certificate handling. A development server
  * on this machine (the only kind with a self-issued certificate) is verified
@@ -195,12 +201,61 @@ async function checkForUpdates(serverUrl) {
   if (!manifest?.version || !manifest?.url || !manifest?.sha256) {
     return { status: 'error', message: 'The update server returned an incomplete manifest.' };
   }
+  // A hold left over from a rollback is stale once this copy has moved past
+  // the build that was held; clear it before anything else.
+  const hold = holdStore.get();
+  if (hold && localSerial > Number(hold.serial)) holdStore.set(null);
   if (!manifestIsNewer(manifest)) {
     return { status: 'current', version: app.getVersion() };
   }
 
+  // Below the security floor, the update is required and a hold does not apply.
+  const required = Number(manifest.minSerial) > 0 && localSerial > 0 && localSerial < Number(manifest.minSerial);
+  if (hold && localSerial <= Number(hold.serial) && !required && Number(manifest.serial) <= Number(hold.untilSerial)) {
+    return { status: 'held', version: manifest.version, notes: manifest.notes || '' };
+  }
+
   cached = { manifest, base };
-  return { status: 'available', version: manifest.version, notes: manifest.notes || '' };
+  return { status: 'available', version: manifest.version, notes: manifest.notes || '', required };
+}
+
+/**
+ * What this copy could switch to: the newest build, and the earlier builds the
+ * server still offers, none of them below the security floor.
+ */
+async function listVersions(serverUrl) {
+  const base = httpBase(serverUrl);
+  const current = { version: app.getVersion(), serial: localSerial };
+  if (!base || !app.isPackaged || process.platform !== 'win32') return { current, supported: false, history: [] };
+  let manifest;
+  try { manifest = await get(`${base}/update/latest.json`, { json: true }); } catch (err) { return { current, supported: true, error: err.message, history: [] }; }
+  const floor = Number(manifest.minSerial) || 0;
+  const entries = [manifest, ...(Array.isArray(manifest.history) ? manifest.history : [])]
+    .filter((e) => e && Number(e.serial) > 0 && Number(e.serial) >= floor && Number(e.serial) !== localSerial)
+    .map((e) => ({ version: e.version, serial: Number(e.serial), notes: e.notes || '', releasedAt: e.releasedAt || null, newer: Number(e.serial) > localSerial }));
+  return { current, supported: true, minSerial: floor, newest: { version: manifest.version, serial: Number(manifest.serial) }, hold: holdStore.get(), history: entries };
+}
+
+/**
+ * Switches to one of the builds the server offers (older or newer), verified
+ * exactly like an update. Going back records a hold so the newer build is not
+ * pushed straight back.
+ */
+async function rollbackTo(serverUrl, serial, onProgress) {
+  const base = httpBase(serverUrl);
+  if (!base) throw new Error('No server address configured.');
+  if (!app.isPackaged || process.platform !== 'win32') throw new Error('Switching versions applies to the installed Windows app only.');
+  const manifest = await get(`${base}/update/latest.json`, { json: true });
+  const wanted = Number(serial);
+  const floor = Number(manifest.minSerial) || 0;
+  const entry = [manifest, ...(Array.isArray(manifest.history) ? manifest.history : [])].find((e) => Number(e?.serial) === wanted);
+  if (!entry) throw new Error('That version is no longer offered by the server.');
+  if (wanted < floor) throw new Error('That version is older than the current security floor and cannot be used.');
+  if (!entry.url || !entry.sha256) throw new Error('The server has no verified download for that version.');
+  if (wanted < localSerial) holdStore.set({ serial: wanted, untilSerial: Number(manifest.serial) });
+  else holdStore.set(null);
+  cached = { manifest: entry, base };
+  return downloadAndApply(onProgress);
 }
 
 /**
@@ -452,6 +507,9 @@ async function fetchChangelog(serverUrl) {
 }
 
 module.exports = {
+  listVersions,
+  rollbackTo,
+  useHoldStore,
   usePinStore,
   checkForUpdates,
   downloadAndApply,

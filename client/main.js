@@ -129,6 +129,13 @@ function pinnedFor(host) {
 }
 
 updater.usePinStore(pinnedFor);
+// The rollback hold lives in settings.json beside the other preferences.
+updater.useHoldStore({
+  get: () => readSettings().updateHold || null,
+  set: (hold) => { const s = readSettings(); if (hold) s.updateHold = hold; else delete s.updateHold; writeSettings(s); },
+});
+let BUILD_SERIAL = 0;
+try { BUILD_SERIAL = Number(require('./package.json').buildSerial) || 0; } catch { BUILD_SERIAL = 0; }
 
 // ---------------------------------------------------------------- settings io
 
@@ -843,6 +850,7 @@ function createWindow() {
 ipcMain.handle('config:get', () => ({
   platform: process.platform,
   version: app.getVersion(),
+  serial: BUILD_SERIAL,
   isDev: IS_DEV,
   defaultServerUrl: HOME_SERVER_URL,
   settings: readSettings(),
@@ -869,7 +877,7 @@ async function checkAndOfferUpdate(force = false) {
     if (result?.status === 'available' && result.version !== lastOfferedVersion) {
       lastOfferedVersion = result.version;
       mainWindow?.webContents.send('update:available', {
-        version: result.version, notes: result.notes || '', current: app.getVersion(),
+        version: result.version, notes: result.notes || '', current: app.getVersion(), required: Boolean(result.required),
       });
     } else if (result?.status !== 'available') {
       console.log(`[pulse] update check: ${result?.status || 'no result'}`
@@ -912,6 +920,21 @@ ipcMain.handle('update:install', async () => {
 });
 
 ipcMain.handle('update:version', () => app.getVersion());
+
+// Switching versions: what is on offer, and going to one of them.
+ipcMain.handle('update:versions', async () => {
+  try { return await updater.listVersions(updateServerUrl()); } catch (err) { return { current: { version: app.getVersion(), serial: BUILD_SERIAL }, supported: false, error: err.message, history: [] }; }
+});
+ipcMain.handle('update:rollback', async (_event, serial) => {
+  try {
+    return await updater.rollbackTo(updateServerUrl(), Number(serial), (progress) => {
+      mainWindow?.webContents.send('update:progress', progress);
+    });
+  } catch (err) {
+    mainWindow?.setProgressBar?.(-1);
+    return { status: 'error', message: err.message };
+  }
+});
 
 ipcMain.handle('update:changelog', async () => {
   try {

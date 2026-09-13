@@ -15,6 +15,9 @@ contextBridge.exposeInMainWorld('pulse', {
     install: () => ipcRenderer.invoke('update:install'),
     version: () => ipcRenderer.invoke('update:version'),
     changelog: () => ipcRenderer.invoke('update:changelog'),
+    // the builds this copy can switch to, and switching to one (older or newer)
+    versions: () => ipcRenderer.invoke('update:versions'),
+    rollback: (serial) => ipcRenderer.invoke('update:rollback', serial),
     onProgress: (callback) => {
       const listener = (_event, payload) => callback(payload);
       ipcRenderer.on('update:progress', listener);

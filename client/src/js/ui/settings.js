@@ -15,7 +15,7 @@ import { toastSuccess, toastError } from './toast.js';
 import { confirmDialog, openModal } from './overlay.js';
 import { showOneTimeCodes, showAuthScreen } from './auth.js';
 import { qrSvg } from '../qr.js';
-import { checkForUpdatesUI, showWhatsNew } from './update.js';
+import { checkForUpdatesUI, showWhatsNew, switchVersionUI } from './update.js';
 import { SHORTCUT_SECTIONS } from './shortcutdata.js';
 
 const JOINED_FMT = new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
@@ -898,11 +898,32 @@ function advancedPane(pane, handle) {
     try { await checkForUpdatesUI(); } finally { checkBtn.classList.remove('is-busy'); }
   });
 
+  // Other builds the server offers: go back a version after a bad update, or
+  // forward again. Everything below the security floor is never listed.
+  const versionsBox = el('div', { class: 'versions' }, el('p', { class: 'field__hint' }, 'Loading…'));
+  desktop.updates?.versions?.().then((info) => {
+    versionsBox.replaceChildren();
+    if (!info?.supported) { versionsBox.appendChild(el('p', { class: 'field__hint' }, 'Switching versions applies to the installed Windows app.')); return; }
+    if (info.error) { versionsBox.appendChild(el('p', { class: 'field__hint' }, `Could not reach the update server: ${info.error}`)); return; }
+    if (info.hold) versionsBox.appendChild(el('p', { class: 'field__hint' }, `You chose to stay on ${info.current.version}. Newer versions wait until you pick one below, unless a security update makes updating required.`));
+    if (!info.history.length) { versionsBox.appendChild(el('p', { class: 'field__hint' }, 'No other version is on offer right now.')); return; }
+    for (const entry of info.history) {
+      versionsBox.appendChild(el('div', { class: 'setting-row' },
+        el('div', { class: 'setting-row__text' },
+          el('div', { class: 'setting-row__label' }, `Voxara ${entry.version}`, entry.newer ? el('span', { class: 'tag', style: { marginLeft: '8px' } }, 'newer') : null),
+          entry.notes ? el('div', { class: 'field__hint' }, entry.notes.slice(0, 160)) : null),
+        el('button', { class: `btn btn--sm${entry.newer ? ' btn--primary' : ''}`, type: 'button', onClick: () => switchVersionUI(entry) }, entry.newer ? 'Update' : 'Go back')));
+    }
+  }).catch(() => { versionsBox.replaceChildren(el('p', { class: 'field__hint' }, 'Could not list versions.')); });
+
   pane.append(
     section('Software update',
       el('p', { class: 'field__hint' },
         'Voxara checks for a new version on launch. You can also check now.'),
       updateRow),
+    section('Other versions',
+      el('p', { class: 'field__hint' }, 'If an update broke something for you, go back to the previous version here and wait for the fix. Versions older than the current security floor are not offered.'),
+      versionsBox),
     section('Developer mode',
       prefToggle('developerMode', 'Enable developer mode',
         'Shows technical identifiers — like the Copy ID options on people and messages.')),
