@@ -270,7 +270,10 @@ function onViewChanged({ previous, view }) {
       const marker = store.reads[view.channelId];
       if (store.unreadFor(view.channelId) > 0) unreadMarkers.set(view.channelId, marker || '');
     }
-    composerInput.value = '';
+    // Whatever you were typing stays with that conversation and comes back
+    // when you return to it, here and across restarts.
+    if (previous.channelId) saveDraft(previous.channelId, composerInput.value);
+    composerInput.value = view.channelId ? loadDraft(view.channelId) : '';
     autosize();
   }
   renderHeader();
@@ -1025,6 +1028,32 @@ export function jumpToMessage(messageId) {
 
 // ------------------------------------------------------------------- replying
 
+// ------------------------------------------------------------- drafts
+// One unsent message per conversation, kept in this browser's storage so it
+// survives switching channels and restarting the app. Sent or cleared text
+// removes its entry; only non-empty drafts are stored, at most 200 of them.
+const DRAFTS_KEY = 'voxara:drafts';
+let drafts = null;
+function allDrafts() {
+  if (drafts) return drafts;
+  try { drafts = JSON.parse(localStorage.getItem(DRAFTS_KEY) || '{}') || {}; } catch { drafts = {}; }
+  return drafts;
+}
+function saveDraft(channelId, text) {
+  const all = allDrafts();
+  const value = String(text || '');
+  if (value.trim()) all[channelId] = value; else delete all[channelId];
+  const keys = Object.keys(all);
+  if (keys.length > 200) for (const k of keys.slice(0, keys.length - 200)) delete all[k];
+  try { localStorage.setItem(DRAFTS_KEY, JSON.stringify(all)); } catch { /* storage full or blocked */ }
+}
+function loadDraft(channelId) { return allDrafts()[channelId] || ''; }
+let draftTimer = null;
+function scheduleDraftSave() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => { if (store.view.channelId) saveDraft(store.view.channelId, composerInput.value); }, 400);
+}
+
 export function startReply(message) {
   replyingTo = message;
   renderReplyBar();
@@ -1557,6 +1586,7 @@ function wireComposer() {
     mentionAC.refresh();
     channelAC.refresh();
     emojiAC.refresh();
+    scheduleDraftSave();
     if (composerInput.value.trim()) pingTyping();
   });
   composerInput.addEventListener('blur', () => setTimeout(() => { mentionAC.close(); channelAC.close(); emojiAC.close(); }, 120));
@@ -1593,6 +1623,7 @@ function wireComposer() {
     }
     if (event.key === 'Escape' && composerInput.value !== '') {
       composerInput.value = '';
+      if (store.view.channelId) saveDraft(store.view.channelId, '');
       autosize();
       renderCount();
     }
@@ -1702,12 +1733,14 @@ function submit() {
   if (pendingAttachments.some((a) => !a.uploaded && !a.failed)) return;  // still uploading
   if (ready.length === 0 && tryInvokeCommand(value)) {
     composerInput.value = '';
+    saveDraft(store.view.channelId, '');
     autosize();
     renderCount();
     return;
   }
 
   composerInput.value = '';
+  saveDraft(store.view.channelId, '');
   pendingAttachments = [];
   renderTray();
   autosize();
