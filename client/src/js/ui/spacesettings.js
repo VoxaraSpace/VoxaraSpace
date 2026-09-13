@@ -41,6 +41,44 @@ export function canManage(guild, permission) {
   return (guild.roles || []).some((r) => ids.includes(r.id) && r.permissions?.[permission] === true);
 }
 
+/**
+ * Whether a member may do `permission` in one channel, mirroring the
+ * server's resolveChannelPermission so the UI shows what the server will
+ * actually allow: base grant (@everyone or a held role) -> category
+ * overwrite -> channel overwrite, everyone's overwrite first and a role
+ * allow beating a role deny at the same tier. The owner bypasses all of it.
+ */
+export function channelPermission(guild, channel, permission, userId = store.selfId) {
+  if (!guild || !channel) return false;
+  if (guild.ownerId === userId) return true;
+  if (channel.type === 'thread') {
+    const parent = (guild.channels || []).find((c) => c.id === channel.parentChannelId);
+    if (!parent) return false;
+    channel = parent;
+  }
+  const roleIds = (guild.memberRoles || {})[userId] || [];
+  const held = (guild.roles || []).filter((r) => roleIds.includes(r.id));
+  const everyone = guild.everyoneRole?.permissions;
+  let allowed = (everyone ? everyone[permission] === true : true) || held.some((r) => r.permissions?.[permission] === true);
+  const tier = (overwrites) => {
+    if (!overwrites) return;
+    const ev = overwrites.everyone;
+    if (ev?.deny?.includes(permission)) allowed = false;
+    if (ev?.allow?.includes(permission)) allowed = true;
+    let roleDeny = false; let roleAllow = false;
+    for (const id of roleIds) {
+      const ow = overwrites[id];
+      if (ow?.deny?.includes(permission)) roleDeny = true;
+      if (ow?.allow?.includes(permission)) roleAllow = true;
+    }
+    if (roleAllow) allowed = true; else if (roleDeny) allowed = false;
+  };
+  const category = channel.categoryId ? (guild.categories || []).find((c) => c.id === channel.categoryId) : null;
+  if (category) tier(category.permissionOverwrites);
+  tier(channel.permissionOverwrites);
+  return allowed;
+}
+
 /** The colour someone's name should show in this space: from their highest
  * role that has a colour set, or null for the plain text colour. */
 export function roleColor(guild, userId) {

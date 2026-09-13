@@ -20,7 +20,7 @@ import { createSlashAutocomplete } from './slashpicker.js';
 import { openGifPicker } from './gifpicker.js';
 import { createEmojiAutocomplete } from './emojiautocomplete.js';
 import { toggleRow, choiceRow } from './settingsshell.js';
-import { canManage, roleColor } from './spacesettings.js';
+import { canManage, roleColor, channelPermission } from './spacesettings.js';
 import { showUserPopover } from './profile.js';
 import { openMessageMenu } from './menus.js';
 import { toastSuccess } from './toast.js';
@@ -86,6 +86,8 @@ export function mountChat() {
   // The "Seen" mark under your last DM message moves as the other side reads.
   store.on('seen', ({ channelId }) => { if (channelId === store.view.channelId) renderSeenMark(); });
   store.on('guilds', renderHeader);
+  // Role or overwrite changes arrive as guild/channel updates: re-check what you may do here.
+  store.on('guilds', () => { if (store.view.channelId) renderComposerState(); });
   store.on('users', () => {
     renderHeader();
     renderTyping();
@@ -2157,14 +2159,20 @@ export function renderComposerState() {
   const locked = conversation?.kind === 'thread'
     && Boolean(store.channel(conversation.id)?.locked)
     && !canManage(conversation.guild, 'manageMessages');
-  const enabled = Boolean(conversation) && !locked;
+  // Channel permission overwrites, resolved the way the server resolves them.
+  const channel = conversation?.guild ? store.channel(conversation.id) : null;
+  const denied = Boolean(channel) && !channelPermission(conversation.guild, channel, 'sendMessages');
+  const noFiles = Boolean(channel) && !channelPermission(conversation.guild, channel, 'attachFiles');
+  const enabled = Boolean(conversation) && !locked && !denied;
 
   composerInput.disabled = !enabled;
   composerSend.disabled = !enabled;
   composer.classList.toggle('is-disabled', !enabled);
+  const attach = document.getElementById('composerAttach');
+  if (attach) attach.hidden = !enabled || noFiles;
   composerInput.placeholder = enabled
     ? (conversation.kind === 'dm' ? `Message ${conversation.name}` : `Message #${conversation.name}`)
-    : (locked ? 'This thread is locked' : 'Select a channel to start talking');
+    : (locked ? 'This thread is locked' : denied ? 'You do not have permission to send messages in this channel' : 'Select a channel to start talking');
   renderCount();
 }
 

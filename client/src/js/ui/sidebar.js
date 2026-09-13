@@ -12,7 +12,7 @@ import {
   showCreateServer, showJoinServer, showCreateChannel, showAddFriend,
 } from './modals.js';
 import { showSettings } from './settings.js';
-import { showSpaceSettings, canConfigureSpace, canManage, roleColor } from './spacesettings.js';
+import { showSpaceSettings, canConfigureSpace, canManage, roleColor, channelPermission } from './spacesettings.js';
 import { showUserPopover } from './profile.js';
 import { openGuildMenu, openChannelMenu, openCategoryMenu, openSpaceBackgroundMenu, openUserMenu, openFriendGroupMenu, openFriendsBackgroundMenu, openVoiceMemberMenu } from './menus.js';
 import { startVoiceChannel, currentVoiceChannel, leaveVoiceChannel, watchStream } from './call.js';
@@ -644,7 +644,9 @@ function renderSpaceHead(guild) {
 }
 
 function renderGuildGroup(guild, { soloView = false } = {}) {
-  const channels = guild.channels.filter((c) => matches(c.name));
+  // Channels the member cannot view are not shown at all, same as the server
+  // refusing them; the owner and anyone with an allow overwrite still see them.
+  const channels = guild.channels.filter((c) => matches(c.name) && channelPermission(guild, c, 'viewChannel'));
   const guildMatches = matches(guild.name);
 
   // While filtering, keep a space only if it or one of its channels matches.
