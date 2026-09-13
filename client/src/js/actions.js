@@ -1208,6 +1208,7 @@ export const PREF_DEFAULTS = {
   notifications: 'mentions',     // all | mentions | none
   flashTaskbar: true,            // bounce the taskbar button on a notification
   notificationPreview: true,     // include message text in the notification
+  notificationSound: true,       // chime for DMs, mentions and replies to you
   groupTimestamps: false,        // show a time on every message, not just on hover
   confirmDelete: true,           // ask before deleting a message
   developerMode: false,          // reveal technical IDs and advanced affordances

@@ -18,6 +18,7 @@ import { openEmojiPicker } from './emojipicker.js';
 import { createMentionAutocomplete } from './mentionpicker.js';
 import { createSlashAutocomplete } from './slashpicker.js';
 import { openGifPicker } from './gifpicker.js';
+import { playNotificationSound } from './sound.js';
 import { createEmojiAutocomplete } from './emojiautocomplete.js';
 import { toggleRow, choiceRow } from './settingsshell.js';
 import { canManage, roleColor, channelPermission } from './spacesettings.js';
@@ -2416,14 +2417,21 @@ export function notifyIfNeeded(message) {
 
   const isDm = Boolean(store.dm(message.channelId));
   const mentionsMe = Array.isArray(message.mentions) && message.mentions.includes(store.selfId);
+  // A reply to one of your messages counts like a mention: it is addressed to you.
+  const parent = message.replyTo ? store.messagesFor(message.channelId).find((m) => m.id === message.replyTo) : null;
+  const repliesToMe = Boolean(parent && parent.authorId === store.selfId);
 
   // A space can override the global setting, so a noisy one can be muted
   // without going quiet everywhere.
   const guild = store.guildOfChannel(message.channelId);
   const level = guild ? spaceNotifyLevel(guild.id) : store.ui.notifications;
   if (level === 'none') return;
-  // 'all' notifies for anything; 'mentions' narrows to DMs and direct mentions.
-  if (level !== 'all' && !isDm && !mentionsMe) return;
+  // 'all' notifies for anything; 'mentions' narrows to DMs, direct mentions and replies to you.
+  if (level !== 'all' && !isDm && !mentionsMe && !repliesToMe) return;
+
+  // The chime is for things addressed to you, whatever the level: a DM, a
+  // mention, a reply. Heard from another tab or window, which is the point.
+  if (store.ui.notificationSound !== false && (isDm || mentionsMe || repliesToMe)) playNotificationSound();
 
   const conversation = store.conversation(message.channelId);
   const where = isDm ? '' : ` in #${conversation?.name || 'channel'}`;

@@ -715,6 +715,12 @@ function notificationsPane(pane) {
       { value: 'none', label: 'Nothing', hint: 'Stay silent' },
     ], store.ui.notifications, (v) => setPref('notifications', v))),
 
+    section('Sound',
+      prefToggle('notificationSound', 'Play a sound for DMs, mentions and replies',
+        'A short chime whenever a message is addressed to you and you are not looking at that conversation. Works from another tab or window.'),
+      el('div', { class: 'settings__actions' },
+        el('button', { class: 'btn btn--sm', type: 'button', onClick: () => { import('./sound.js').then((m) => m.playNotificationSound({ force: true })); } }, 'Play the sound'))),
+
     section('Behaviour',
       prefToggle('notificationPreview', 'Show the message in the notification',
         'Off shows only who it is from.'),
