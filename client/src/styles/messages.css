@@ -690,6 +690,20 @@
   color: var(--mention);
 }
 
+.md-chan {
+  padding: 0 3px;
+  border-radius: var(--r-xs);
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.md-chan:hover {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
 .md-spoiler {
   background: var(--bg-raised);
   color: transparent;

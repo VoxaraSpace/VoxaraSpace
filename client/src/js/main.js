@@ -690,6 +690,14 @@ function wireDelegatedClicks() {
       return;
     }
 
+    const chan = event.target.closest?.('.md-chan');
+    if (chan) {
+      const id = chan.dataset.channel;
+      const guild = store.guildOfChannel(id);
+      if (guild) openConversation(id, { guildId: guild.id });
+      return;
+    }
+
     const mention = event.target.closest?.('.md-mention');
     if (mention) {
       const handle = mention.dataset.mention;

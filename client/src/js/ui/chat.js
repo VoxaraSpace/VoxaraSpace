@@ -629,6 +629,7 @@ function messageNode(message, previous) {
     body.appendChild(renderMarkdown(message.content, {
       selfUsername: store.self?.username,
       knownUsernames: store.knownUsernames(),
+      knownChannels: channelMapFor(message.channelId),
       emojis: emojiMapFor(message.channelId),
       reduceFlashing: reduceFlashing(),
     }));
@@ -1454,6 +1455,30 @@ function showJumpButton(visible) {
 
 // ---------------------------------------------------------------- composer
 
+/** channel name (lower) -> id, for the space a message lives in. */
+function channelMapFor(channelId) {
+  const guild = store.guildOfChannel(channelId);
+  const map = new Map();
+  if (!guild) return map;
+  for (const c of guild.channels || []) if (c.type !== 'thread') map.set(String(c.name).toLowerCase(), c.id);
+  return map;
+}
+
+/** #channel autocomplete: every channel of the space you are typing in. */
+function channelCandidates() {
+  const conversation = store.conversation();
+  const guild = conversation?.guild;
+  if (!guild) return [];
+  const kindOf = { voice: 'Voice channel', forum: 'Forum', text: 'Text channel' };
+  return (guild.channels || []).filter((c) => c.type !== 'thread').map((c) => ({
+    label: `#${c.name}`,
+    sub: kindOf[c.type] || 'Channel',
+    insert: c.name,
+    match: String(c.name).toLowerCase(),
+    kind: 'channel',
+  }));
+}
+
 function mentionCandidates() {
   const conversation = store.conversation();
   const list = [];
@@ -1514,6 +1539,7 @@ function emojiCandidates(query) {
 
 function wireComposer() {
   const mentionAC = createMentionAutocomplete(composerInput, mentionCandidates);
+  const channelAC = createMentionAutocomplete(composerInput, channelCandidates, { trigger: '#' });
   createSlashAutocomplete(composerInput, slashCandidates);
   // GIFs: only when the server has a Tenor key; the GIF itself is sent as a link
   // and the server's link preview re-hosts it, so viewers load it from Voxara.
@@ -1529,14 +1555,16 @@ function wireComposer() {
     autosize();
     renderCount();
     mentionAC.refresh();
+    channelAC.refresh();
     emojiAC.refresh();
     if (composerInput.value.trim()) pingTyping();
   });
-  composerInput.addEventListener('blur', () => setTimeout(() => { mentionAC.close(); emojiAC.close(); }, 120));
+  composerInput.addEventListener('blur', () => setTimeout(() => { mentionAC.close(); channelAC.close(); emojiAC.close(); }, 120));
 
   composerInput.addEventListener('keydown', (event) => {
     // Autocomplete popups get first refusal on arrows/enter/tab/escape.
     if (mentionAC.handleKeydown(event)) return;
+    if (channelAC.handleKeydown(event)) return;
     if (emojiAC.handleKeydown(event)) return;
     // Which chord sends is a preference; the other one inserts a newline.
     if (event.key === 'Enter') {

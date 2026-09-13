@@ -12,7 +12,7 @@ import { el, clear } from '../utils.js';
  * @param {HTMLTextAreaElement} textarea
  * @param {() => Array<{label:string, sub?:string, insert:string, match:string, kind:string, node?:HTMLElement}>} getCandidates
  */
-export function createMentionAutocomplete(textarea, getCandidates) {
+export function createMentionAutocomplete(textarea, getCandidates, { trigger = '@' } = {}) {
   let popup = null;
   let items = [];
   let active = 0;
@@ -24,7 +24,8 @@ export function createMentionAutocomplete(textarea, getCandidates) {
     const caret = textarea.selectionStart;
     if (caret !== textarea.selectionEnd) return null;
     const before = textarea.value.slice(0, caret);
-    const match = before.match(/(?:^|\s)@([^\s@]*)$/);
+    const re = trigger === '#' ? /(?:^|\s)#([^\s#]*)$/ : /(?:^|\s)@([^\s@]*)$/;
+    const match = before.match(re);
     if (!match) return null;
     return { query: match[1], start: caret - match[1].length - 1, end: caret };
   }
@@ -59,7 +60,7 @@ export function createMentionAutocomplete(textarea, getCandidates) {
     if (!chosen || !range) return;
     const before = textarea.value.slice(0, range.start);
     const after = textarea.value.slice(range.end);
-    const inserted = `@${chosen.insert} `;
+    const inserted = `${trigger}${chosen.insert} `;
     textarea.value = before + inserted + after;
     const caret = (before + inserted).length;
     textarea.setSelectionRange(caret, caret);

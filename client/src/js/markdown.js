@@ -85,6 +85,17 @@ export function renderMarkdown(text, ctx = {}) {
     return `${lead}<span class="md-mention${isMe ? ' md-mention--me' : ''}" data-mention="${lower}">@${name}</span>`;
   });
 
+  // 6a. #channel mentions. Only names of channels in this space are styled, so
+  // a stray "#1" or a hashtag stays plain text; the id rides along so a click
+  // opens the channel even after a rename since the last render.
+  if (ctx.knownChannels && ctx.knownChannels.size) {
+    working = working.replace(/(^|[^\w/&#])#([a-z0-9][a-z0-9_-]{0,63})/gi, (match, lead, name) => {
+      const id = ctx.knownChannels.get(name.toLowerCase());
+      if (!id) return match;
+      return `${lead}<span class="md-chan" data-channel="${escapeText(id)}">#${name}</span>`;
+    });
+  }
+
   // 6b. :name: emoji — a custom one for this space first, then the built-in
   // shortcode set (:thumbsup: etc.), so a plain-text shortcode always renders
   // the same way regardless of which space or DM it's sent in.
