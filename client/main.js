@@ -1280,8 +1280,11 @@ function startGameDetection() {
 // so a window behind another one (or a game drawing through the GPU) previews
 // and shares as black or as whatever is on top of it; WGC captures the window
 // itself. Unknown feature names are ignored elsewhere.
+// Windows only, not whole screens: the WGC screen capturer produced a blank
+// picture on some machines (1.47.5 to 1.48.3), so screens stay on the
+// standard path, which has always worked for them.
 if (process.platform === 'win32') {
-  app.commandLine.appendSwitch('enable-features', 'WebRtcAllowWgcWindowCapturer,WebRtcAllowWgcScreenCapturer');
+  app.commandLine.appendSwitch('enable-features', 'WebRtcAllowWgcWindowCapturer');
 }
 
 if (!app.requestSingleInstanceLock()) {
