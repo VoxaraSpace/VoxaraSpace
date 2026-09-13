@@ -103,5 +103,7 @@ contextBridge.exposeInMainWorld('pulse', {
     choose: (id, opts) => ipcRenderer.send('screen:chosen', id, opts || {}),
     // a fresh preview snapshot (data URL) of one source.
     preview: (id) => ipcRenderer.invoke('screen:preview', id),
+    // fresh small thumbnails for every source, for the picker's tiles.
+    thumbs: () => ipcRenderer.invoke('screen:thumbs'),
   },
 });

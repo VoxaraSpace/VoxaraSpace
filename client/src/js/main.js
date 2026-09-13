@@ -417,7 +417,7 @@ function handleServerEvent({ op, data }) {
       if (mentionsMe && message.everyone) {
         const gid = store.guildOfChannel(message.channelId)?.id;
         const uname = store.self?.username || '';
-        const directlyMe = uname && new RegExp(`(^|[^\\w@])@${uname}(?![\\w-])`, 'i').test(message.content || '');
+        const directlyMe = uname && new RegExp(`(^|[^\\w@])@${uname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`, 'i').test(message.content || '');
         if (gid && spaceEveryoneMuted(gid) && !directlyMe) mentionsMe = false;
       }
       if (!mine && mentionsMe) {

@@ -1213,6 +1213,17 @@ function showScreenPicker(sources) {
     tiles.set(src.id, node);
     return node;
   };
+  // Tiles keep up with what each window shows now, not what it showed when
+  // the picker opened: a fresh set of thumbnails every couple of seconds.
+  const tileTimer = setInterval(async () => {
+    if (!pickerHost) { clearInterval(tileTimer); return; }
+    let fresh = [];
+    try { fresh = await window.pulse?.screen?.thumbs?.() || []; } catch { fresh = []; }
+    for (const { id, thumb } of fresh) {
+      const t = tiles.get(id)?.querySelector('.screenpick__thumb');
+      if (t && thumb) t.style.backgroundImage = `url("${thumb}")`;
+    }
+  }, 2000);
 
   const screens = sources.filter((x) => x.kind === 'screen');
   const windows = sources.filter((x) => x.kind === 'window');

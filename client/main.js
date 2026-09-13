@@ -1252,6 +1252,15 @@ function startGameDetection() {
 
 // -------------------------------------------------------------------- boot
 
+// Windows: capture windows and screens through Windows Graphics Capture
+// instead of the legacy GDI path. GDI grabs the pixels at a window's rectangle,
+// so a window behind another one (or a game drawing through the GPU) previews
+// and shares as black or as whatever is on top of it; WGC captures the window
+// itself. Unknown feature names are ignored elsewhere.
+if (process.platform === 'win32') {
+  app.commandLine.appendSwitch('enable-features', 'WebRtcAllowWgcWindowCapturer,WebRtcAllowWgcScreenCapturer');
+}
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -1292,6 +1301,14 @@ if (!app.requestSingleInstanceLock()) {
 
     // A fresh, larger snapshot of one capture source, for the share picker's
     // preview pane. Cheap enough to poll every second or so while the picker is open.
+    // Fresh small thumbnails of every source, for the picker's tiles to keep
+    // showing what each window looks like now rather than at open time.
+    ipcMain.handle('screen:thumbs', async () => {
+      try {
+        const sources = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 320, height: 180 } });
+        return sources.map((src) => ({ id: src.id, thumb: src.thumbnail.toDataURL() }));
+      } catch { return []; }
+    });
     ipcMain.handle('screen:preview', async (_e, id) => {
       try {
         const sources = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 960, height: 540 } });
