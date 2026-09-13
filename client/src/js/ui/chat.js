@@ -663,7 +663,16 @@ function messageNode(message, previous) {
     const gifUrl = gifOnlyUrl(message.content);
     if (gifUrl && store.ui.inlineImages) {
       const src = mediaUrl(`/gif-proxy/${toBase64Url(gifUrl)}`);
-      content.appendChild(el('div', { class: 'gifmsg' }, reduceFlashing() ? gifGate(src, 'GIF') : el('img', { class: 'gifmsg__img', src, alt: 'GIF', loading: 'lazy' })));
+      const gifImg = el('img', { class: 'gifmsg__img', src, alt: 'GIF', loading: 'lazy' });
+      // The server read the GIF's size when the message was sent: lay the box
+      // out at its final size now so nothing moves when the frames arrive.
+      const gw = Number(message.gif?.width), gh = Number(message.gif?.height);
+      if (gw > 0 && gh > 0) {
+        const scale = Math.min(320 / gw, 260 / gh, 1);
+        gifImg.width = Math.round(gw * scale); gifImg.height = Math.round(gh * scale);
+        gifImg.style.aspectRatio = `${gw} / ${gh}`; gifImg.style.height = 'auto';
+      }
+      content.appendChild(el('div', { class: 'gifmsg' }, reduceFlashing() ? gifGate(src, 'GIF') : gifImg));
       if (message.editedAt) content.appendChild(el('span', { class: 'msg__edited' }, '(edited)'));
     } else if (message.content) content.appendChild(body);
 
