@@ -5,7 +5,7 @@ code that runs on your computer: the desktop app, the bot SDK and example
 bots. It is published so that anyone can check what the app does with their
 data, build it themselves, and report problems.
 
-- Source: https://github.com/VoxaraSpace/voxara
+- Source: https://github.com/VoxaraSpace/VoxaraSpace
 - Website and downloads: https://voxaraspace.com
 - Bot documentation: https://voxaraspace.com/developers/docs/
 - Security reports: security@voxaraspace.com (see SECURITY.md)
