@@ -88,12 +88,18 @@ export function renderMarkdown(text, ctx = {}) {
   // 6a. #channel mentions. Only names of channels in this space are styled, so
   // a stray "#1" or a hashtag stays plain text; the id rides along so a click
   // opens the channel even after a rename since the last render.
+  // Channel names can hold anything (emoji, "・", spaces are the one thing
+  // they cannot), so the match is driven by the space's actual names, longest
+  // first, rather than by a character class. Names are matched against the
+  // already-escaped text, so they are escaped the same way first.
   if (ctx.knownChannels && ctx.knownChannels.size) {
-    working = working.replace(/(^|[^\w/&#])#([a-z0-9][a-z0-9_-]{0,63})/gi, (match, lead, name) => {
-      const id = ctx.knownChannels.get(name.toLowerCase());
-      if (!id) return match;
-      return `${lead}<span class="md-chan" data-channel="${escapeText(id)}">#${name}</span>`;
-    });
+    const names = [...ctx.knownChannels.keys()].sort((x, y) => y.length - x.length);
+    for (const name of names) {
+      const id = ctx.knownChannels.get(name);
+      const literal = escapeText(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`(^|[^\\w/&#])#(${literal})(?=$|[\\s.,!?:;)\\]])`, 'gi');
+      working = working.replace(re, (match, lead, shown) => `${lead}<span class="md-chan" data-channel="${escapeText(id)}">#${shown}</span>`);
+    }
   }
 
   // 6b. :name: emoji — a custom one for this space first, then the built-in
