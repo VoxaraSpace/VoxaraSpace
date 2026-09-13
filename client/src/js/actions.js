@@ -152,6 +152,18 @@ export async function fetchThreads(channelId) {
 }
 
 /** Lock (or unlock) a thread so only moderators can post in it. */
+/** Replace a forum post's tags (author or a moderator). */
+export async function setThreadTags(threadId, tags) {
+  try {
+    const result = await net.request('thread:set-tags', { threadId, tags });
+    store.upsertThread(result.thread);
+    return true;
+  } catch (err) {
+    reportError(err, 'Could not update the tags on that post.');
+    return false;
+  }
+}
+
 export async function lockThread(threadId, locked = true) {
   try {
     const result = await net.request('thread:lock', { threadId, locked });

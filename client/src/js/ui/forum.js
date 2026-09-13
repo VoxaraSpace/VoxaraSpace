@@ -10,7 +10,7 @@ import { store } from '../state.js';
 import { openModal } from './overlay.js';
 import { labelledField, textInput, avatar } from './bits.js';
 import { toastError } from './toast.js';
-import { openConversation, createThread, fetchThreads, sendMessage, updateChannel } from '../actions.js';
+import { openConversation, createThread, fetchThreads, sendMessage, updateChannel, setThreadTags } from '../actions.js';
 import { canManage } from './spacesettings.js';
 
 const TAG_COLORS = ['#5b6cff', '#22cc88', '#e9724c', '#a866dc', '#e8b93b', '#39b8d6', '#e0576f', '#8b93a7'];
@@ -152,7 +152,43 @@ function postCard(channel, thread) {
           return tag ? el('span', { class: 'role-tag', style: { color: tag.color, borderColor: tag.color } }, tag.label) : null;
         })) : null));
   card.addEventListener('click', () => openConversation(thread.id, { guildId: channel.guildId }));
+  // Right-click: the post's own tags, for its author and for moderators.
+  if (canEditPostTags(channel, thread)) {
+    card.title = 'Right-click to edit tags';
+    card.addEventListener('contextmenu', (event) => { event.preventDefault(); showEditTagsModal(thread); });
+  }
   return card;
+}
+
+/** Whether you may change a forum post's tags: you wrote it, or you moderate here. */
+export function canEditPostTags(channel, thread) {
+  const guild = store.guildOfChannel(channel.id);
+  return Boolean(guild) && (thread.createdBy === store.selfId || canManage(guild, 'manageMessages'));
+}
+
+/** Pick the tags an existing post carries, from the forum's list. */
+export function showEditTagsModal(thread) {
+  const channel = store.channel(thread.parentChannelId);
+  const tags = channel?.availableTags || [];
+  if (!channel) return;
+  if (!tags.length) { toastError('This forum has no tags yet. Add some with Manage tags first.'); return; }
+  const chosen = new Set(thread.tags || []);
+  const picker = el('div', { class: 'forum__tagpicker' }, ...tags.map((tag) => {
+    const chip = el('button', {
+      class: `forum__tagchip${chosen.has(tag.id) ? ' is-active' : ''}`, type: 'button', style: { '--tag-color': tag.color },
+      onClick: () => { if (chosen.has(tag.id)) { chosen.delete(tag.id); chip.classList.remove('is-active'); } else if (chosen.size < 5) { chosen.add(tag.id); chip.classList.add('is-active'); } else toastError('A post can carry up to five tags.'); },
+    }, tag.label);
+    return chip;
+  }));
+  const handle = openModal({
+    title: 'Edit tags',
+    subtitle: thread.name,
+    body: [el('p', { class: 'field__hint' }, 'Pick up to five. Everyone in the forum sees the change straight away.'), picker],
+  });
+  const save = el('button', { class: 'btn btn--primary', type: 'button', onClick: async () => { save.disabled = true; const ok = await setThreadTags(thread.id, [...chosen]); if (ok) handle.close(); else save.disabled = false; } }, 'Save tags');
+  handle.modal.appendChild(el('div', { class: 'modal__foot' },
+    el('button', { class: 'btn btn--ghost', type: 'button', onClick: () => handle.close() }, 'Cancel'),
+    save));
 }
 
 export function showNewPostModal(channelId) {

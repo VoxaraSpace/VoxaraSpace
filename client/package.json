@@ -1,6 +1,6 @@
 {
   "name": "pulse-client",
-  "version": "1.47.8",
+  "version": "1.47.9",
   "description": "Voxara desktop app: voice and text chat for friends and communities",
   "main": "main.js",
   "license": "Apache-2.0",
@@ -61,6 +61,6 @@
     },
     "afterPack": "build/after-pack.js"
   },
-  "buildSerial": 118,
+  "buildSerial": 119,
   "private": true
 }

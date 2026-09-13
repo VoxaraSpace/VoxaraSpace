@@ -212,6 +212,8 @@ export function renderHeader() {
   if (videoBtn) videoBtn.hidden = conversation.kind !== 'dm';
   const lockBtn = threadLockButton();
   lockBtn.hidden = true;
+  const tagsBtn = threadTagsButton();
+  tagsBtn.hidden = true;
 
   if (conversation.kind === 'dm') {
     const partner = store.user(conversation.partnerId);
@@ -229,6 +231,11 @@ export function renderHeader() {
     nameNode.textContent = conversation.name;
     topicNode.textContent = (conversation.parent ? `Thread from #${conversation.parent.name}` : 'Thread')
       + (thread?.locked ? ' · Locked' : '');
+    const parentChannel = conversation.parent ? store.channel(conversation.parent.id) : null;
+    if (parentChannel?.type === 'forum' && thread && conversation.guild && (thread.createdBy === store.selfId || canManage(conversation.guild, 'manageMessages'))) {
+      tagsBtn.hidden = false;
+      tagsBtn.onclick = () => void import('./forum.js').then((m) => m.showEditTagsModal(store.thread(conversation.id) || thread));
+    }
     if (conversation.guild && canManage(conversation.guild, 'manageMessages')) {
       lockBtn.hidden = false;
       lockBtn.classList.toggle('is-on', Boolean(thread?.locked));
@@ -2174,6 +2181,18 @@ export function renderComposerState() {
     ? (conversation.kind === 'dm' ? `Message ${conversation.name}` : `Message #${conversation.name}`)
     : (locked ? 'This thread is locked' : denied ? 'You do not have permission to send messages in this channel' : 'Select a channel to start talking');
   renderCount();
+}
+
+/** The tags button in the header: forum posts only, for the author and moderators. */
+function threadTagsButton() {
+  let btn = document.getElementById('chatThreadTags');
+  if (!btn) {
+    btn = el('button', { class: 'icon-btn', id: 'chatThreadTags', type: 'button', title: 'Edit this post\'s tags', 'aria-label': 'Edit this post\'s tags' }, icon('tag'));
+    const tools = document.querySelector('.chat__tools');
+    const lock = document.getElementById('chatThreadLock');
+    if (lock) lock.before(btn); else { const pins = document.getElementById('chatPins'); if (pins) pins.before(btn); else tools?.prepend(btn); }
+  }
+  return btn;
 }
 
 /** The lock toggle in the header, made once and shown only on threads you moderate. */
