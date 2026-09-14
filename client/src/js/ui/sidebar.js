@@ -970,6 +970,8 @@ async function signOut() {
   }
   net.disconnect();
   setSettings({ token: null, mediaToken: null });
+  // Nothing typed but unsent should outlive the sign-in on a shared computer.
+  try { localStorage.removeItem('voxara:drafts'); } catch { /* storage blocked */ }
   // A reload is the cleanest way to drop every subscription and cached view.
   window.location.reload();
 }
