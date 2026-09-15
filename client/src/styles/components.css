@@ -3869,3 +3869,11 @@ body.has-theme-bg .chat { background: transparent; }
 .invitecard__label { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
 .invitecard__name { font-weight: 650; font-size: 14px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .invitecard__meta { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- checkbox lines in dialogs, and the role checklist ---- */
+.checkline { display: flex; align-items: flex-start; gap: 10px; margin: 12px 0 4px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+.checkline input { margin-top: 3px; accent-color: var(--accent); }
+.checkline b { color: var(--text); font-weight: 650; }
+.checklist { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px 26px; }
+.checklist__row { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.checklist__row input { accent-color: var(--accent); }

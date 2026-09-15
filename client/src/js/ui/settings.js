@@ -646,6 +646,7 @@ function appearancePane(pane) {
     section('Sidebar layout', choiceRow([
       { value: 'tiles', label: 'Tiles', hint: 'Icon above the name' },
       { value: 'rows', label: 'Single line', hint: 'One row per space and friend' },
+      { value: 'rail', label: 'Side rail', hint: 'Icon column down the left: friends and Steam on top, spaces in the middle, new and join at the bottom' },
     ], store.ui.sidebarLayout, (v) => setPref('sidebarLayout', v))),
 
     section('Message size', choiceRow([

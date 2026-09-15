@@ -14,11 +14,13 @@ function reportError(err, fallback = 'That did not work.') {
 
 // -------------------------------------------------------------- navigation
 
-export async function openConversation(channelId, { guildId = null, focusComposer = true } = {}) {
+export async function openConversation(channelId, { guildId = null, focusComposer = true, chat = false } = {}) {
   if (!channelId) return;
-  // A voice channel is joined, not opened — there's no message view to show.
+  // A voice channel has a text chat of its own (opened with chat: true, which
+  // is what clicking it in the sidebar does, alongside joining the call). Any
+  // other route to a voice channel joins it.
   const chan = store.channel(channelId);
-  if (chan?.type === 'voice') {
+  if (chan?.type === 'voice' && !chat) {
     void import('./ui/call.js').then((m) => m.startVoiceChannel(channelId, chan.name));
     return;
   }
@@ -32,6 +34,12 @@ export async function openConversation(channelId, { guildId = null, focusCompose
   if (!guild) store.lastChannelByGuild.set('@home', channelId);
   // Follow the conversation into whichever section it belongs to.
   setSidebarMode(guild ? 'spaces' : 'friends');
+
+  // Under-18s in an adults-only space (or an age-restricted channel) get the
+  // explanation screen; the server would refuse the history anyway, so do not
+  // ask for it and do not raise the error toast.
+  const gateChan = chan?.type === 'thread' ? store.channel(chan.parentChannelId) : chan;
+  if (guild && !store.self?.adult && (guild.adult || gateChan?.nsfw)) return;
 
   if (!store.loaded.has(channelId)) await loadHistory(channelId);
   markRead(channelId);
@@ -978,10 +986,9 @@ export async function moveChannelToCategory(channelId, categoryId) {
   }
 }
 
-export async function createChannel(guildId, name, topic = '', categoryId = null, type = 'text') {
-  const result = await net.request('channel:create', { guildId, name, topic, categoryId, type });
+export async function createChannel(guildId, name, topic = '', categoryId = null, type = 'text', { nsfw = false } = {}) {
+  const result = await net.request('channel:create', { guildId, name, topic, categoryId, type, nsfw });
   store.addChannel(result.channel);
-  // Voice channels have no message view — you join them, you don't open them.
   if (result.channel.type !== 'voice') openConversation(result.channel.id, { guildId });
   return result.channel;
 }
@@ -1197,7 +1204,7 @@ export const PREF_DEFAULTS = {
   theme: 'dark',                 // dark | light (legacy; superseded by themeId)
   themeId: 'midnight',           // selected theme id (built-in or community)
   density: 'comfortable',        // comfortable | compact
-  sidebarLayout: 'tiles',        // tiles | rows (one line per space/friend)
+  sidebarLayout: 'tiles',        // tiles | rows | rail (icon column down the left side)
   fontSize: 'medium',            // small | medium | large
   showMembers: true,             // member panel visible in channels
   inlineImages: true,            // render image attachments, or list them as files

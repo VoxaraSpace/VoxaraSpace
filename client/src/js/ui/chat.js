@@ -215,6 +215,8 @@ export function renderHeader() {
   lockBtn.hidden = true;
   const tagsBtn = threadTagsButton();
   tagsBtn.hidden = true;
+  const backBtn = forumBackButton();
+  backBtn.hidden = true;
 
   if (conversation.kind === 'dm') {
     const partner = store.user(conversation.partnerId);
@@ -247,6 +249,10 @@ export function renderHeader() {
     const backLabel = conversation.parent ? `#${conversation.parent.name}` : 'Channel';
     const back = el('button', { class: 'breadcrumb__item breadcrumb__item--link', type: 'button' }, backLabel);
     back.addEventListener('click', () => openConversation(conversation.parentChannelId, { guildId: conversation.guild?.id }));
+    // A forum post gets a plain back button in the header too, not just the breadcrumb.
+    backBtn.hidden = !(parentChannel?.type === 'forum');
+    backBtn.onclick = () => openConversation(conversation.parentChannelId, { guildId: conversation.guild?.id });
+    backBtn.title = `Back to #${conversation.parent?.name || 'forum'}`;
     append(breadcrumb, [
       el('span', { class: 'breadcrumb__item' }, conversation.guild?.name || 'Space'),
       el('span', { class: 'breadcrumb__sep' }, '›'),
@@ -255,10 +261,12 @@ export function renderHeader() {
       el('span', { class: 'breadcrumb__item breadcrumb__item--current' }, conversation.name),
     ]);
   } else {
-    glyph.appendChild(icon('hash'));
+    backBtn.hidden = true;
+    const isVoice = store.channel(conversation.id)?.type === 'voice';
+    glyph.appendChild(icon(isVoice ? 'speaker' : 'hash'));
     // The hash is typographic here, not an icon — the glyph slot is hidden.
     nameNode.textContent = `#${conversation.name}`;
-    topicNode.textContent = conversation.topic || '';
+    topicNode.textContent = isVoice ? 'Text chat for this voice channel. Click the channel again to open the call view.' : (conversation.topic || '');
     append(breadcrumb, [
       el('span', { class: 'breadcrumb__item' }, conversation.guild?.name || 'Space'),
       el('span', { class: 'breadcrumb__sep' }, '›'),
@@ -390,6 +398,31 @@ export function renderMessages({ jump = false } = {}) {
 
   if (!channelId || !conversation) {
     scrollHost.appendChild(noConversationState());
+    showJumpButton(false);
+    return;
+  }
+
+  // Age gates. The server refuses under-18s outright; adults see a warning
+  // once per channel (remembered on this computer) before anything loads.
+  const gateGuild = conversation.guild;
+  const gateChannel = store.channel(channelId);
+  const gateSource = gateChannel?.type === 'thread' ? store.channel(gateChannel.parentChannelId) : gateChannel;
+  if (gateGuild && !store.self?.adult && (gateGuild.adult || gateSource?.nsfw)) {
+    scrollHost.appendChild(el('div', { class: 'gate gate--blocked' },
+      el('div', { class: 'gate__badge' }, '18+'),
+      el('h2', {}, gateGuild.adult ? 'This space is for adults only' : 'This channel is for adults only'),
+      el('p', {}, 'You can see it once you are 18. Your date of birth on your account decides this; it cannot be changed here.')));
+    showJumpButton(false);
+    return;
+  }
+  if (gateSource?.nsfw && !nsfwAccepted(gateSource.id)) {
+    scrollHost.appendChild(el('div', { class: 'gate' },
+      el('div', { class: 'gate__badge' }, '18+'),
+      el('h2', {}, `#${gateSource.name} is age-restricted`),
+      el('p', {}, 'It may contain adult or explicit content. You have to be 18 or over, and you have to want to see it.'),
+      el('div', { class: 'gate__btns' },
+        el('button', { class: 'btn', type: 'button', onClick: () => openGuild(gateGuild.id) }, 'Go back'),
+        el('button', { class: 'btn btn--primary', type: 'button', onClick: () => { acceptNsfw(gateSource.id); renderMessages({ jump: true }); renderComposerState(); } }, 'Continue'))));
     showJumpButton(false);
     return;
   }
@@ -1070,6 +1103,12 @@ export function jumpToMessage(messageId) {
 }
 
 // ------------------------------------------------------------------- replying
+
+// ------------------------------------------------------------- age gate memory
+// "Continue" on an 18+ channel is remembered per channel on this computer.
+const NSFW_KEY = 'voxara:nsfw-ok';
+function nsfwAccepted(channelId) { try { return (JSON.parse(localStorage.getItem(NSFW_KEY) || '[]') || []).includes(channelId); } catch { return false; } }
+function acceptNsfw(channelId) { try { const l = JSON.parse(localStorage.getItem(NSFW_KEY) || '[]') || []; if (!l.includes(channelId)) l.push(channelId); localStorage.setItem(NSFW_KEY, JSON.stringify(l.slice(-200))); } catch { /* storage blocked */ } }
 
 // ------------------------------------------------------------- drafts
 // One unsent message per conversation, kept in this browser's storage so it
@@ -2235,7 +2274,9 @@ export function renderComposerState() {
   const channel = conversation?.guild ? store.channel(conversation.id) : null;
   const denied = Boolean(channel) && !channelPermission(conversation.guild, channel, 'sendMessages');
   const noFiles = Boolean(channel) && !channelPermission(conversation.guild, channel, 'attachFiles');
-  const enabled = Boolean(conversation) && !locked && !denied;
+  const gateChan = channel?.type === 'thread' ? store.channel(channel.parentChannelId) : channel;
+  const gated = Boolean(conversation?.guild) && ((!store.self?.adult && (conversation.guild.adult || gateChan?.nsfw)) || (gateChan?.nsfw && !nsfwAccepted(gateChan.id)));
+  const enabled = Boolean(conversation) && !locked && !denied && !gated;
 
   composerInput.disabled = !enabled;
   composerSend.disabled = !enabled;
@@ -2246,6 +2287,17 @@ export function renderComposerState() {
     ? (conversation.kind === 'dm' ? `Message ${conversation.name}` : `Message #${conversation.name}`)
     : (locked ? 'This thread is locked' : denied ? 'You do not have permission to send messages in this channel' : 'Select a channel to start talking');
   renderCount();
+}
+
+/** A back-to-forum button at the start of the header, for forum posts. */
+function forumBackButton() {
+  let btn = document.getElementById('chatBack');
+  if (!btn) {
+    btn = el('button', { class: 'chat__back', id: 'chatBack', type: 'button', 'aria-label': 'Back to the forum' }, icon('arrow-left'), el('span', {}, 'Back'));
+    const glyph = document.getElementById('chatGlyph');
+    if (glyph) glyph.before(btn); else document.getElementById('chatHeader')?.prepend(btn);
+  }
+  return btn;
 }
 
 /** The tags button in the header: forum posts only, for the author and moderators. */

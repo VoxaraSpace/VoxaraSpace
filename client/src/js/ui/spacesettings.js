@@ -1,6 +1,7 @@
 import { el, clear, initials } from '../utils.js';
 import { icon } from '../icons.js';
 import { store } from '../state.js';
+import { AUTOMOD_PACKS } from './automodpacks.js';
 import { showCategoryModal, showCategoryPermissions, submitButton, cancelButton } from './modals.js';
 import { mediaUrl } from '../client.js';
 import {
@@ -50,6 +51,13 @@ export function canManage(guild, permission) {
  */
 export function channelPermission(guild, channel, permission, userId = store.selfId) {
   if (!guild || !channel) return false;
+  // Age-restricted content is a hard line the server enforces too: nobody
+  // under 18 sees an 18+ space or channel, whatever their roles.
+  if (permission === 'viewChannel' && userId === store.selfId && !store.self?.adult) {
+    if (guild.adult) return false;
+    const gate = channel.type === 'thread' ? (guild.channels || []).find((c) => c.id === channel.parentChannelId) : channel;
+    if (gate?.nsfw) return false;
+  }
   if (guild.ownerId === userId) return true;
   if (channel.type === 'thread') {
     const parent = (guild.channels || []).find((c) => c.id === channel.parentChannelId);
@@ -1101,6 +1109,12 @@ function safetyPane(guildId, pane) {
         onChange: (v) => updateGuild(guildId, { allowPeek: v }),
       }),
       toggleRow({
+        label: 'Adults only (18+)',
+        hint: 'Members must be 18 or over by their date of birth. Under-18s cannot join, and existing under-18 members lose access until they are 18. Everyone is told before they enter.',
+        value: Boolean(guild.adult),
+        onChange: (v) => updateGuild(guildId, { adult: v }),
+      }),
+      toggleRow({
         label: 'List this space on voxaraspace.com/discover',
         hint: 'Anyone can find it there: the name, member count, description and the invite. Turn off any time.',
         value: Boolean(guild.discoverable),
@@ -1323,7 +1337,26 @@ function automodPane(guildId, pane, handle) {
     save.classList.remove('is-busy');
   });
 
+  // Preset packs: one click seeds the list, the text box stays editable.
+  const packRows = AUTOMOD_PACKS.map((pack) => {
+    const btn = el('button', { class: 'btn btn--sm', type: 'button' }, 'Add pack');
+    btn.addEventListener('click', () => {
+      const current = words.value.split('\n').map((w) => w.trim()).filter(Boolean);
+      const have = new Set(current.map((w) => w.toLowerCase()));
+      const added = pack.words.filter((w) => !have.has(w));
+      words.value = [...current, ...added].join('\n');
+      btn.textContent = added.length ? `Added ${added.length}` : 'Already in';
+      setTimeout(() => { btn.textContent = 'Add pack'; }, 1800);
+    });
+    return el('div', { class: 'setting-row' },
+      el('div', { class: 'setting-row__text' }, el('div', { class: 'setting-row__label' }, `${pack.label} (${pack.words.length})`), el('div', { class: 'field__hint' }, pack.hint)),
+      btn);
+  });
+
   pane.append(
+    section('Preset packs',
+      el('p', { class: 'field__hint' }, 'Add a pack to put its words into the list below, then remove or add anything you like before saving. Packs never save on their own.'),
+      ...packRows),
     section('Blocked words',
       el('p', { class: 'field__hint' },
         'Messages containing any of these are blocked when sent — whole-word, '

@@ -119,6 +119,11 @@ export function renderSidebar() {
   renderModeSwitch();
 
   const friendsMode = store.ui.sidebarMode === 'friends';
+  // Side-rail layout: the space strip becomes a column down the left and also
+  // carries the friends, Steam, cards, create and join buttons, so the header
+  // row and the two tabs are not needed.
+  const rail = store.ui.sidebarLayout === 'rail';
+  document.getElementById('sidebar')?.classList.toggle('is-rail', rail);
 
   document.getElementById('sidebarCreate')?.setAttribute(
     'title', friendsMode ? 'Add a friend' : 'Create a space');
@@ -139,8 +144,9 @@ export function renderSidebar() {
     filterInput.value = '';
   }
 
-  listHost.hidden = friendsMode;
+  listHost.hidden = friendsMode && !rail;
   spaceHead.hidden = true;
+  if (rail && friendsMode) renderSpaceList();
 
   if (friendsMode) {
     renderRequestsGroup();
@@ -540,6 +546,22 @@ function renderSpaceList() {
     : [...store.guilds.keys()][0];
 
   const strip = el('div', { class: 'spacebar__strip' });
+  const rail = store.ui.sidebarLayout === 'rail';
+  const railTile = (name, iconName, onClick, { badge = 0, active = false, cls = '' } = {}) => {
+    const t = el('button', { class: `spacetile spacetile--rail${active ? ' is-current' : ''} ${cls}`.trim(), type: 'button', title: name, 'aria-label': name, onClick });
+    const face = el('span', { class: 'spacetile__face spacetile__face--icon' }, icon(iconName));
+    if (badge > 0) face.appendChild(el('span', { class: 'spacetile__badge' }, badge > 99 ? '99+' : String(badge)));
+    t.append(face, el('span', { class: 'spacetile__name' }, name));
+    return t;
+  };
+  if (rail) {
+    const dmUnread = store.dmTotals().unread + store.incoming.size;
+    strip.appendChild(railTile('Friends', 'chat', () => setMode('friends'), { badge: dmUnread, active: store.ui.sidebarMode === 'friends' }));
+    if (store.server?.steam) strip.appendChild(railTile('Steam', 'steam', () => { void import('./steamstore.js').then((m) => m.showSteamStore()); }));
+    strip.appendChild(railTile('Cards', 'layers', () => { void import('./cards.js').then((m) => m.showCards()); }));
+    strip.appendChild(el('div', { class: 'spacebar__divider' }));
+  }
+  const currentGuildActive = store.ui.sidebarMode !== 'friends';
 
   for (const guild of store.guilds.values()) {
     const isCurrent = guild.id === currentId;
@@ -550,12 +572,12 @@ function renderSpaceList() {
       // The space colour drives the tile's marker, so it stays meaningful even
       // once a picture is uploaded — otherwise it only ever showed as the
       // fallback nobody sees.
-      class: `spacetile${isCurrent ? ' is-current' : ''}`,
+      class: `spacetile${isCurrent && currentGuildActive ? ' is-current' : ''}`,
       style: { '--space-color': guild.iconColor },
       type: 'button',
       title: guild.name,
-      'aria-current': isCurrent ? 'true' : null,
-      onClick: () => openGuild(guild.id),
+      'aria-current': isCurrent && currentGuildActive ? 'true' : null,
+      onClick: () => { if (rail && store.ui.sidebarMode === 'friends') setMode('spaces'); openGuild(guild.id); },
       onContextMenu: (event) => {
         event.preventDefault();
         openGuildMenu(pointAnchor(event.clientX, event.clientY), guild);
@@ -578,6 +600,13 @@ function renderSpaceList() {
 
   // No create/join tiles here: they would be the first thing scrolled out of
   // reach. The + and compass in the sidebar header do that job and never move.
+  if (rail) {
+    strip.appendChild(el('div', { class: 'spacebar__divider' }));
+    strip.appendChild(railTile('New space', 'plus', () => showCreateServer()));
+    strip.appendChild(railTile('Join', 'compass', () => showJoinServer()));
+    strip.appendChild(railTile(store.ui.spacesCollapsed ? 'Names' : 'Icons only', store.ui.spacesCollapsed ? 'list' : 'minus', () => document.getElementById('sidebarCompact')?.click(), { cls: 'spacetile--dim' }));
+  }
+
   listHost.appendChild(strip);
 }
 
@@ -807,7 +836,7 @@ function voiceChannelGroup(guild, channel) {
     type: 'button',
     title: mine ? 'Open voice controls' : `Join ${channel.name}`,
     dataset: { channelId: channel.id },
-    onClick: () => startVoiceChannel(channel.id, channel.name),
+    onClick: () => { startVoiceChannel(channel.id, channel.name); void openConversation(channel.id, { guildId: channel.guildId, chat: true }); },
     onContextmenu: (event) => { event.preventDefault(); openChannelMenu(row, guild, channel); },
   },
     el('span', { class: 'row__mark' }, icon('speaker')),

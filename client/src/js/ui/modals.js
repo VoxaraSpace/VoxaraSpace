@@ -302,6 +302,17 @@ export function showCreateChannel(guild, categoryId) {
   };
   const picker = el('div', { class: 'chantype' }, chosen.text, chosen.voice, chosen.forum);
 
+  // Private: only the roles ticked here can see the channel (everyone else
+  // gets View channel denied). Age-restricted: 18+ by date of birth.
+  const privateBox = el('input', { type: 'checkbox', id: 'newChannelPrivate' });
+  const roles = (guild.roles || []).slice();
+  const roleBoxes = new Map();
+  const roleList = el('div', { class: 'checklist', hidden: true },
+    roles.length ? roles.map((r) => { const cb = el('input', { type: 'checkbox' }); roleBoxes.set(r.id, cb); return el('label', { class: 'checklist__row' }, cb, el('span', { class: 'role-tag', style: r.color ? { color: r.color, borderColor: r.color } : {} }, r.name)); })
+      : [el('p', { class: 'field__hint' }, 'This space has no roles yet. Create one in Space settings, Roles, then come back; until then only you (the owner) and moderators with an allow override would see the channel.')]);
+  privateBox.addEventListener('change', () => { roleList.hidden = !privateBox.checked; });
+  const nsfwBox = el('input', { type: 'checkbox', id: 'newChannelNsfw' });
+
   const handle = openModal({
     title: 'Create a channel',
     subtitle: `in ${guild.name}`,
@@ -310,6 +321,9 @@ export function showCreateChannel(guild, categoryId) {
       labelledField({ id: 'newChannelName', label: 'Channel name', input: name }),
       preview,
       topicField,
+      el('label', { class: 'checkline', for: 'newChannelPrivate' }, privateBox, el('span', {}, el('b', {}, 'Private channel'), ' Only the roles you pick can see it.')),
+      roleList,
+      el('label', { class: 'checkline', for: 'newChannelNsfw' }, nsfwBox, el('span', {}, el('b', {}, 'Age-restricted (18+)'), ' Members under 18 cannot see it; adults are warned before they open it.')),
     ],
     initialFocus: '#newChannelName',
   });
@@ -317,7 +331,11 @@ export function showCreateChannel(guild, categoryId) {
   const create = submitButton('Create channel', handle, async () => {
     const value = name.value.trim();
     if (!value) throw new Error('Give the channel a name.');
-    await createChannel(guild.id, value, topic.value.trim(), categoryId, type);
+    const channel = await createChannel(guild.id, value, topic.value.trim(), categoryId, type, { nsfw: nsfwBox.checked });
+    if (privateBox.checked && channel) {
+      await setChannelOverwrite(channel.id, 'everyone', 'viewChannel', 'deny');
+      for (const [roleId, cb] of roleBoxes) if (cb.checked) await setChannelOverwrite(channel.id, roleId, 'viewChannel', 'allow');
+    }
     handle.close();
   });
 
@@ -603,6 +621,8 @@ export function showChannelSettings(channel) {
     }, label)));
 
   const isForum = channel.type === 'forum';
+  const nsfwEdit = el('input', { type: 'checkbox', id: 'channelNsfw' });
+  nsfwEdit.checked = Boolean(channel.nsfw);
 
   const handle = openModal({
     title: `Edit #${channel.name}`,
@@ -623,6 +643,7 @@ export function showChannelSettings(channel) {
           : 'How long members must wait between messages. Moderators are exempt.',
         input: slowmode,
       }),
+      el('label', { class: 'checkline', for: 'channelNsfw' }, nsfwEdit, el('span', {}, el('b', {}, 'Age-restricted (18+)'), ' Members under 18 cannot see this channel; adults are warned before they open it.')),
       isForum ? el('p', { class: 'field__label' }, 'Tags') : null,
       isForum ? el('p', { class: 'field__hint' }, 'Posts can be labelled with these — saved as you edit them.') : null,
       isForum ? buildTagManager(channel) : null,
@@ -634,6 +655,7 @@ export function showChannelSettings(channel) {
     await updateChannel(channel.id, {
       name: name.value.trim(),
       topic: topic.value.trim(),
+      nsfw: nsfwEdit.checked,
       slowmode: Number(slowmode.value),
     });
     handle.close();
