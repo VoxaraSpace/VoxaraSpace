@@ -1110,9 +1110,9 @@ function safetyPane(guildId, pane) {
       }),
       toggleRow({
         label: 'Adults only (18+)',
-        hint: 'Members must be 18 or over by their date of birth. Under-18s cannot join, and existing under-18 members lose access until they are 18. Everyone is told before they enter.',
+        hint: 'Members must be 18 or over. Under-18s cannot join, and existing under-18 members lose access until they are 18. Where the server requires it, members verify once with a credit card (never a photo or ID). Everyone is told before they enter.',
         value: Boolean(guild.adult),
-        onChange: (v) => updateGuild(guildId, { adult: v }),
+        onChange: (v) => updateGuild(guildId, { adult: v }).catch((err) => toastError(err.message || 'Could not change that.')),
       }),
       toggleRow({
         label: 'List this space on voxaraspace.com/discover',

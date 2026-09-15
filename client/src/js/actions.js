@@ -839,6 +839,16 @@ export async function exportMyData() {
 
 // --- Steam integration ---------------------------------------------------
 
+/**
+ * Age verification by credit card (Stripe). The server opens a Stripe page in
+ * the browser; when it finishes, the server marks the account and pushes
+ * `self:age` to every open client.
+ */
+export async function startAgeVerification() {
+  const { url } = await net.request('age:verify-start');
+  desktop.openExternal(url);
+}
+
 export async function linkSteam() {
   const { url } = await net.request('steam:link-url');
   desktop.openExternal(url);

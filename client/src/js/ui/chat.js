@@ -28,7 +28,7 @@ import { toastSuccess } from './toast.js';
 import { showShortcuts, showCreateChannel, showAddFriend, showCreateServer } from './modals.js';
 import { desktop, mediaUrl, steamImageUrl, net } from '../client.js';
 import { chooseFiles, prepareAttachment } from '../imagepick.js';
-import { uploadAttachment, lockThread, peekGuild, joinGuild, openGuild } from '../actions.js';
+import { uploadAttachment, lockThread, peekGuild, joinGuild, openGuild, startAgeVerification } from '../actions.js';
 import { toastError } from './toast.js';
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
@@ -408,10 +408,28 @@ export function renderMessages({ jump = false } = {}) {
   const gateChannel = store.channel(channelId);
   const gateSource = gateChannel?.type === 'thread' ? store.channel(gateChannel.parentChannelId) : gateChannel;
   if (gateGuild && !store.self?.adult && (gateGuild.adult || gateSource?.nsfw)) {
-    scrollHost.appendChild(el('div', { class: 'gate gate--blocked' },
-      el('div', { class: 'gate__badge' }, '18+'),
-      el('h2', {}, gateGuild.adult ? 'This space is for adults only' : 'This channel is for adults only'),
-      el('p', {}, 'You can see it once you are 18. Your date of birth on your account decides this; it cannot be changed here.')));
+    const what = gateGuild.adult ? 'This space is for adults only' : 'This channel is for adults only';
+    if (store.self?.over18) {
+      // Old enough by date of birth, not yet verified: offer the card check.
+      const btn = el('button', { class: 'btn btn--primary', type: 'button' }, 'Verify with a credit card');
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try { await startAgeVerification(); btn.textContent = 'Finish in your browser…'; }
+        catch (err) { btn.disabled = false; toastError(err.message || 'Could not start the check.'); }
+      });
+      scrollHost.appendChild(el('div', { class: 'gate' },
+        el('div', { class: 'gate__badge' }, '18+'),
+        el('h2', {}, what),
+        el('p', {}, 'Verify once that you are 18 or over. A credit card is checked through Stripe: nothing is charged, the card is not saved, and Voxara never sees the number. No photo, no ID.'),
+        el('div', { class: 'gate__btns' },
+          el('button', { class: 'btn', type: 'button', onClick: () => openGuild(gateGuild.id) }, 'Go back'),
+          btn)));
+    } else {
+      scrollHost.appendChild(el('div', { class: 'gate gate--blocked' },
+        el('div', { class: 'gate__badge' }, '18+'),
+        el('h2', {}, what),
+        el('p', {}, 'You can see it once you are 18. Your date of birth on your account decides this; it cannot be changed here.')));
+    }
     showJumpButton(false);
     return;
   }

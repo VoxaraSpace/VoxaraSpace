@@ -496,6 +496,16 @@ function handleServerEvent({ op, data }) {
       toast({ title: 'Scheduled message not sent', body: 'You no longer have access to that channel.', kind: 'error' });
       break;
 
+    case 'self:age':
+      // The card check finished in the browser: 18+ areas open up right away.
+      store.self = { ...store.self, adult: data.adult, over18: data.over18, ageVerified: data.ageVerified, ageVerifiedAt: data.ageVerifiedAt };
+      store.emit('self');
+      store.emit('guilds');
+      renderMessages({ jump: true });
+      renderComposerState();
+      toast({ title: 'Age verified', body: 'Your account is marked as 18+. Age-restricted spaces and channels are open to you now.', kind: 'success' });
+      break;
+
     case 'self:steam':
       store.self = { ...store.self, steam: data.steam, steamLinked: Boolean(data.steam) };
       store.emit('self');

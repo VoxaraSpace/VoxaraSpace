@@ -2,7 +2,7 @@ import { el, clear, initials } from '../utils.js';
 import { store } from '../state.js';
 import {
   updateProfile, changePassword, signOutEverywhere, uploadProfileImage, setPref, copyToClipboard,
-  getBilling, exportMyData, linkSteam, unlinkSteam, fetchSteamProfile, PREF_DEFAULTS,
+  getBilling, exportMyData, linkSteam, unlinkSteam, fetchSteamProfile, PREF_DEFAULTS, startAgeVerification,
 } from '../actions.js';
 import { showGamingProfile } from './gaming.js';
 import { themeGallery } from './themes.js';
@@ -271,7 +271,8 @@ function accountPane(pane, handle) {
       el('p', { class: 'field__hint' },
         'Your username identifies you to everyone on this Voxara server and cannot be changed.')),
     section('Connections', steamCard()),
-    store.self?.emailVerified === false ? section('Confirm your email', verifyCard()) : null,
+    section('Age verification', ageCard()),
+    store.self?.emailVerified === false ? section('Confirm your email', verifyCard()) : document.createComment('email confirmed'),
     section('Two-factor authentication', mfaCard()),
     section('Change password',
       labelledField({ id: 'pwCurrent', label: 'Current password', input: current }),
@@ -526,6 +527,45 @@ const STEAM_STATE_LABEL = {
  * a small live card — avatar, presence and headline numbers filled in lazily
  * from the same steam:profile op the Gaming modal uses.
  */
+/**
+ * Where the account stands on 18+ access, and the one-time credit-card check
+ * (Stripe) when the server requires it. Nothing here is a payment.
+ */
+function ageCard() {
+  const self = store.self || {};
+  const required = Boolean(self.ageVerification?.required);
+  const wrap = el('div', { class: 'agecard' });
+  if (self.ageVerified) {
+    wrap.append(
+      el('p', { class: 'field__hint' }, `Verified as 18 or over on ${JOINED_FMT.format(new Date(self.ageVerifiedAt || Date.now()))} with a credit card. Age-restricted spaces and channels are open to you.`));
+    return wrap;
+  }
+  if (!required) {
+    wrap.append(el('p', { class: 'field__hint' },
+      self.over18
+        ? 'Age-restricted areas use the date of birth you gave at sign-up. This server does not ask for anything more.'
+        : 'Your date of birth says you are under 18, so age-restricted spaces and channels stay hidden until then.'));
+    return wrap;
+  }
+  if (!self.over18) {
+    wrap.append(el('p', { class: 'field__hint' }, 'Your date of birth says you are under 18. Age-restricted spaces and channels open on your 18th birthday, after a quick credit-card check.'));
+    return wrap;
+  }
+  const btn = el('button', { class: 'btn btn--primary', type: 'button' }, 'Verify with a credit card');
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try { await startAgeVerification(); btn.textContent = 'Finish in your browser…'; }
+    catch (err) { btn.disabled = false; toastError(err.message || 'Could not start the check.'); }
+  });
+  wrap.append(
+    el('p', { class: 'field__hint' },
+      'Age-restricted spaces and channels need a one-time check that you are 18 or over. '
+      + 'A credit card is checked through Stripe: nothing is charged, the card is not saved, and Voxara never sees the number. '
+      + 'No photo and no ID. Debit and prepaid cards do not count, because under-18s can hold those.'),
+    el('div', { class: 'settings__actions' }, btn));
+  return wrap;
+}
+
 function steamCard() {
   const card = el('div', { class: 'steam-card' });
   let epoch = 0; // a redraw invalidates any fetch still in flight
