@@ -1,6 +1,6 @@
 {
   "name": "pulse-client",
-  "version": "1.49.1",
+  "version": "1.50.1",
   "description": "Voxara desktop app: voice and text chat for friends and communities",
   "main": "main.js",
   "license": "Apache-2.0",
@@ -12,6 +12,7 @@
   "scripts": {
     "start": "electron .",
     "build:win": "electron-builder --win zip --x64",
+    "build:linux": "electron-builder --linux AppImage deb --x64",
     "pack": "electron-builder --dir"
   },
   "devDependencies": {
@@ -48,6 +49,39 @@
       "artifactName": "Voxara-${version}-${arch}.${ext}",
       "signAndEditExecutable": false
     },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "artifactName": "Voxara-${version}-${arch}.${ext}",
+      "executableName": "voxara",
+      "icon": "build/icon.png",
+      "category": "Network;Chat;InstantMessaging",
+      "synopsis": "Voice and text chat for friends and communities",
+      "maintainer": "Voxara <support@voxaraspace.com>",
+      "desktop": {
+        "Name": "Voxara",
+        "Comment": "Voice and text chat for friends and communities",
+        "StartupWMClass": "Voxara"
+      }
+    },
+    "deb": {
+      "packageName": "voxara",
+      "vendor": "Voxara",
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0",
+        "libasound2"
+      ]
+    },
     "nsis": {
       "oneClick": true,
       "perMachine": false,
@@ -61,6 +95,6 @@
     },
     "afterPack": "build/after-pack.js"
   },
-  "buildSerial": 128,
+  "buildSerial": 131,
   "private": true
 }

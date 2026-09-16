@@ -98,7 +98,7 @@ export async function checkForUpdatesUI() {
   }
   if (result?.status === 'available') {
     const current = await desk.updates.version().catch(() => '');
-    showAvailable({ version: result.version, notes: result.notes || '', current });
+    showAvailable({ version: result.version, notes: result.notes || '', current, manual: Boolean(result.manual) });
   } else if (result?.status === 'current') {
     toastSuccess('You’re on the latest version.');
   } else if (result?.status === 'error') {
@@ -125,14 +125,14 @@ function showAvailable(info) {
       el('div', { class: 'update__badge' }, icon('arrow-down')),
       el('p', { class: 'update__lead' }, `Voxara ${info.version} is ready to install.`),
       el('p', { class: 'update__meta' },
-        `${info.current ? `You’re on ${info.current}. ` : ''}Voxara will restart to finish.`),
+        `${info.current ? `You’re on ${info.current}. ` : ''}${info.manual ? 'This copy was installed from a package, so the new one is downloaded from the website and installed the same way.' : 'Voxara will restart to finish.'}`),
       info.notes ? el('p', { class: 'update__notes' }, info.notes) : null),
     actions: [
       el('button', { class: 'btn', type: 'button', onClick: () => closeModal() }, 'Later'),
       el('button', {
         class: 'btn btn--primary', type: 'button',
-        onClick: () => startInstall(info),
-      }, 'Update & restart'),
+        onClick: () => (info.manual ? (closeModal(), desk.updates.install().catch(() => {})) : startInstall(info)),
+      }, info.manual ? 'Open the download page' : 'Update & restart'),
     ],
     dismissable: true,
   });
@@ -152,7 +152,7 @@ function startInstall(info) {
     dismissable: false,
   });
   desk.updates.install()
-    .then((result) => { if (result?.status === 'error') fail(result.message); })
+    .then((result) => { if (result?.status === 'error') fail(result.message); else if (result?.status === 'manual') { closeModal(); toastSuccess(result.message || 'The download page is open in your browser.'); } })
     .catch((err) => fail(err.message));
 }
 

@@ -187,8 +187,8 @@ async function checkForUpdates(serverUrl) {
   if (!app.isPackaged) {
     return { status: 'dev', message: 'Updates only apply to the packaged app.' };
   }
-  if (process.platform !== 'win32') {
-    return { status: 'unsupported', message: 'Self-update is available on Windows only.' };
+  if (process.platform !== 'win32' && process.platform !== 'linux') {
+    return { status: 'unsupported', message: 'Self-update is available on Windows and Linux only.' };
   }
 
   let manifest;
@@ -215,8 +215,61 @@ async function checkForUpdates(serverUrl) {
     return { status: 'held', version: manifest.version, notes: manifest.notes || '' };
   }
 
+  if (process.platform === 'linux' && !manifest.linux?.appImage?.url) {
+    return { status: 'current', version: app.getVersion(), message: 'No Linux build of the newer version yet.' };
+  }
   cached = { manifest, base };
-  return { status: 'available', version: manifest.version, notes: manifest.notes || '', required };
+  return { status: 'available', version: manifest.version, notes: manifest.notes || '', required, manual: process.platform === 'linux' && !linuxAppImagePath() };
+}
+
+/**
+ * The AppImage this process was started from, or null when Voxara was
+ * installed some other way on Linux (the .deb, a distro package). AppImage
+ * runtimes export the path; the mount point alone is not enough to write to.
+ */
+function linuxAppImagePath() {
+  if (process.platform !== 'linux') return null;
+  const p = process.env.APPIMAGE;
+  if (!p || !/\.AppImage$/i.test(p)) return null;
+  try { fs.accessSync(p, fs.constants.W_OK); return p; } catch { return null; }
+}
+
+/**
+ * Linux AppImage: download the new image beside the current one, verify it,
+ * swap it in with a rename (the running copy keeps its old inode until it
+ * exits), then start the new file and leave. Any other Linux install has no
+ * safe in-place path (it needs root), so the download page is opened instead.
+ */
+async function downloadAndApplyLinux(manifest, base, onProgress) {
+  const entry = manifest.linux?.appImage;
+  if (!entry?.url || !entry?.sha256) throw new Error('The server has no Linux build for that version.');
+  const current = linuxAppImagePath();
+  if (!current) {
+    await shell.openExternal(`${base}/download`);
+    return { status: 'manual', version: manifest.version, message: 'This copy of Voxara was installed from a package, so the new version is downloaded from the website and installed the same way.' };
+  }
+  const staging = path.join(app.getPath('userData'), 'updates');
+  await fsp.mkdir(staging, { recursive: true });
+  const packagePath = path.join(staging, entry.file);
+  onProgress?.({ phase: 'downloading', percent: 0 });
+  await download(`${base}${entry.url}`, packagePath, (percent) => onProgress?.({ phase: 'downloading', percent }));
+  onProgress?.({ phase: 'verifying', percent: 100 });
+  const actual = await sha256(packagePath);
+  if (actual !== entry.sha256) {
+    await fsp.unlink(packagePath).catch(() => {});
+    throw new Error('The download did not match its checksum and was discarded.');
+  }
+  onProgress?.({ phase: 'restarting', percent: 100 });
+  // Same directory as the current image so the final rename is atomic.
+  const next = `${current}.new`;
+  await fsp.copyFile(packagePath, next);
+  await fsp.chmod(next, 0o755);
+  await fsp.rename(next, current);
+  await fsp.unlink(packagePath).catch(() => {});
+  const child = spawn(current, [], { detached: true, stdio: 'ignore', env: { ...process.env } });
+  child.unref();
+  setTimeout(() => app.exit(0), 500);
+  return { status: 'restarting', version: manifest.version };
 }
 
 /**
@@ -226,7 +279,7 @@ async function checkForUpdates(serverUrl) {
 async function listVersions(serverUrl) {
   const base = httpBase(serverUrl);
   const current = { version: app.getVersion(), serial: localSerial };
-  if (!base || !app.isPackaged || process.platform !== 'win32') return { current, supported: false, history: [] };
+  if (!base || !app.isPackaged || (process.platform !== 'win32' && !linuxAppImagePath())) return { current, supported: false, history: [] };
   let manifest;
   try { manifest = await get(`${base}/update/latest.json`, { json: true }); } catch (err) { return { current, supported: true, error: err.message, history: [] }; }
   const floor = Number(manifest.minSerial) || 0;
@@ -244,7 +297,7 @@ async function listVersions(serverUrl) {
 async function rollbackTo(serverUrl, serial, onProgress) {
   const base = httpBase(serverUrl);
   if (!base) throw new Error('No server address configured.');
-  if (!app.isPackaged || process.platform !== 'win32') throw new Error('Switching versions applies to the installed Windows app only.');
+  if (!app.isPackaged || (process.platform !== 'win32' && !linuxAppImagePath())) throw new Error('Switching versions applies to the installed Windows app and the Linux AppImage only.');
   const manifest = await get(`${base}/update/latest.json`, { json: true });
   const wanted = Number(serial);
   const floor = Number(manifest.minSerial) || 0;
@@ -252,6 +305,7 @@ async function rollbackTo(serverUrl, serial, onProgress) {
   if (!entry) throw new Error('That version is no longer offered by the server.');
   if (wanted < floor) throw new Error('That version is older than the current security floor and cannot be used.');
   if (!entry.url || !entry.sha256) throw new Error('The server has no verified download for that version.');
+  if (process.platform === 'linux' && !entry.linux?.appImage?.url) throw new Error('There is no Linux build of that version.');
   if (wanted < localSerial) holdStore.set({ serial: wanted, untilSerial: Number(manifest.serial) });
   else holdStore.set(null);
   cached = { manifest: entry, base };
@@ -279,6 +333,7 @@ function installedWithInstaller(installDir) {
 async function downloadAndApply(onProgress) {
   if (!cached) throw new Error('No update has been found yet.');
   const { manifest, base } = cached;
+  if (process.platform === 'linux') return downloadAndApplyLinux(manifest, base, onProgress);
 
   const staging = path.join(app.getPath('userData'), 'updates');
   await fsp.mkdir(staging, { recursive: true });

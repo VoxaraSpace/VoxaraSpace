@@ -877,7 +877,7 @@ async function checkAndOfferUpdate(force = false) {
     if (result?.status === 'available' && result.version !== lastOfferedVersion) {
       lastOfferedVersion = result.version;
       mainWindow?.webContents.send('update:available', {
-        version: result.version, notes: result.notes || '', current: app.getVersion(), required: Boolean(result.required),
+        version: result.version, notes: result.notes || '', current: app.getVersion(), required: Boolean(result.required), manual: Boolean(result.manual),
       });
     } else if (result?.status !== 'available') {
       console.log(`[pulse] update check: ${result?.status || 'no result'}`
