@@ -13,6 +13,7 @@ import {
 } from './modals.js';
 import { showSettings } from './settings.js';
 import { showSpaceSettings, canConfigureSpace, canManage, roleColor, channelPermission } from './spacesettings.js';
+import { showDiscover } from './discover.js';
 import { showUserPopover } from './profile.js';
 import { openGuildMenu, openChannelMenu, openCategoryMenu, openSpaceBackgroundMenu, openUserMenu, openFriendGroupMenu, openFriendsBackgroundMenu, openVoiceMemberMenu } from './menus.js';
 import { startVoiceChannel, currentVoiceChannel, leaveVoiceChannel, watchStream } from './call.js';
@@ -196,7 +197,7 @@ function renderModeSwitch() {
   // Each tab carries the unread weight of the section you cannot currently see.
   const dmUnread = store.dmTotals().unread + store.incoming.size;
   let spaceUnread = 0;
-  for (const guildId of store.guilds.keys()) spaceUnread += store.guildUnread(guildId).unread;
+  for (const guildId of store.guilds.keys()) spaceUnread += store.guildUnread(guildId).mentions;
 
   for (const [tab, count] of [[friendsTab, dmUnread], [spacesTab, spaceUnread]]) {
     const badge = tab.querySelector('.modeswitch__badge');
@@ -527,7 +528,8 @@ function renderNoSpacesPrompt() {
       'Spaces hold channels for a whole group.',
       el('div', { style: { marginTop: '10px', display: 'flex', gap: '6px' } },
         el('button', { class: 'btn btn--sm btn--primary', type: 'button', onClick: showCreateServer }, 'Create'),
-        el('button', { class: 'btn btn--sm', type: 'button', onClick: showJoinServer }, 'Join')))));
+        el('button', { class: 'btn btn--sm', type: 'button', onClick: showJoinServer }, 'Join'),
+        el('button', { class: 'btn btn--sm', type: 'button', onClick: () => showDiscover() }, 'Discover')))));
 }
 
 /**
@@ -589,9 +591,11 @@ function renderSpaceList() {
       style: iconUrl ? { backgroundImage: `url("${iconUrl}")` } : { background: guild.iconColor },
     }, iconUrl ? null : initialsOf(guild.name));
 
-    if (totals.unread > 0) {
+    if (totals.mentions > 0) {
       face.appendChild(el('span', { class: 'spacetile__badge' },
-        totals.unread > 99 ? '99+' : String(totals.unread)));
+        totals.mentions > 99 ? '99+' : String(totals.mentions)));
+    } else if (totals.unread > 0) {
+      face.appendChild(el('span', { class: 'spacetile__dot', 'aria-label': 'Unread messages' }));
     }
     tile.appendChild(face);
     tile.appendChild(el('span', { class: 'spacetile__name' }, guild.name));
@@ -720,6 +724,7 @@ function renderGuildGroup(guild, { soloView = false } = {}) {
         ? el('span', { class: 'row__forumicon', 'aria-hidden': 'true' }, icon('layers'))
         : el('span', { class: 'row__hash', 'aria-hidden': 'true' }, '#'),
       unread: store.unreadFor(channel.id),
+      mentions: store.mentionsFor(channel.id),
       onOpen: () => openConversation(channel.id, { guildId: guild.id }),
       onMenu: (anchor) => openChannelMenu(anchor, guild, channel),
     }));
@@ -916,7 +921,10 @@ function voiceChannelGroup(guild, channel) {
   return wrap;
 }
 
-function conversationRow({ id, label, leading, unread, onOpen, onMenu, onContext, subtitle }) {
+// `unread` marks the row (bold name, dot); `mentions` is the red number. DMs
+// pass no `mentions`, so every unread DM counts, the way a ping does.
+function conversationRow({ id, label, leading, unread, mentions, onOpen, onMenu, onContext, subtitle }) {
+  const pings = mentions === undefined ? unread : mentions;
   const isActive = store.view.channelId === id;
 
   const row = el('button', {
@@ -949,8 +957,10 @@ function conversationRow({ id, label, leading, unread, onOpen, onMenu, onContext
     row.appendChild(el('span', { class: 'row__label' }, label));
   }
 
-  if (unread > 0) {
-    row.appendChild(el('span', { class: 'row__badge' }, unread > 99 ? '99+' : String(unread)));
+  if (pings > 0) {
+    row.appendChild(el('span', { class: 'row__badge' }, pings > 99 ? '99+' : String(pings)));
+  } else if (unread > 0) {
+    row.appendChild(el('span', { class: 'row__dot', 'aria-label': 'Unread' }));
   }
   if (onMenu) {
     row.appendChild(el('span', {

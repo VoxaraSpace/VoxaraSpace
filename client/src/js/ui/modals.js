@@ -14,6 +14,7 @@ import { fileToJpegDataUrl, AVATAR_SPEC } from '../imagepick.js';
 import { initials } from '../utils.js';
 import { toastSuccess, toastError } from './toast.js';
 import { buildTagManager } from './forum.js';
+import { showDiscover } from './discover.js';
 
 /** Wraps an async submit handler with busy state and inline error reporting. */
 export function submitButton(label, handle, run) {
@@ -129,6 +130,7 @@ export function showJoinServer() {
     }
   });
 
+  const browse = el('button', { class: 'btn', type: 'button', onClick: () => { handle.close(); showDiscover(); } }, icon('compass'), ' Browse public spaces');
   const peek = el('button', { class: 'btn', type: 'button' }, 'Peek inside');
   peek.addEventListener('click', async () => {
     const value = code.value.trim();
@@ -149,7 +151,7 @@ export function showJoinServer() {
     if (event.key === 'Enter') join.click();
   });
 
-  handle.modal.appendChild(el('div', { class: 'modal__foot' }, cancelButton(handle), peek, join));
+  handle.modal.appendChild(el('div', { class: 'modal__foot' }, browse, cancelButton(handle), peek, join));
 }
 
 /** A read-only look inside a space before joining it. */

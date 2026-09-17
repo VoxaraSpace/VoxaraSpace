@@ -1,7 +1,7 @@
 import { el } from '../utils.js';
 import { icon } from '../icons.js';
 import { store } from '../state.js';
-import { leaveGuild, deleteGuild, deleteChannel, markRead, deleteCategory, openDm, blockUser, unblockUser, copyToClipboard, moveFriendToGroup, deleteFriendGroup, removeFriend, addFriend, timeoutMember, spaceEveryoneMuted, setSpaceEveryoneMuted, kickMember, banMember, deleteMessage, kickFromVoice, moveVoiceMember, setPinned, createThread, openConversation } from '../actions.js';
+import { updateGuild, leaveGuild, deleteGuild, deleteChannel, markRead, deleteCategory, openDm, blockUser, unblockUser, copyToClipboard, moveFriendToGroup, deleteFriendGroup, removeFriend, addFriend, timeoutMember, spaceEveryoneMuted, setSpaceEveryoneMuted, kickMember, banMember, deleteMessage, kickFromVoice, moveVoiceMember, setPinned, createThread, openConversation } from '../actions.js';
 import { peerAudioFor, setPeerAudio } from './call.js';
 import { startEditing, startReply, openForwardPicker } from './chat.js';
 import { openPopover, menuItem, menuSeparator, menuLabel, confirmDialog, openModal } from './overlay.js';
@@ -46,6 +46,16 @@ export function openGuildMenu(anchor, guild, placement = 'bottom-start') {
       label: 'Create category',
       iconName: 'plus',
       onSelect: () => showCategoryModal(guild),
+    }) : null,
+    canConfigure ? menuItem({
+      label: guild.discoverable ? 'Unpublish from Space Discovery' : 'Publish to Space Discovery',
+      iconName: 'compass',
+      onSelect: async () => {
+        try {
+          await updateGuild(guild.id, { discoverable: !guild.discoverable });
+          toastSuccess(guild.discoverable ? `${guild.name} is no longer listed.` : `${guild.name} is now listed in Space Discovery, in the app and on the website.`, guild.discoverable ? 'Unpublished' : 'Published');
+        } catch (err) { toastError(err.message || 'Could not change that.'); }
+      },
     }) : null,
     canConfigure ? menuItem({
       label: 'Change space picture',

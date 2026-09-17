@@ -1115,8 +1115,8 @@ function safetyPane(guildId, pane) {
         onChange: (v) => updateGuild(guildId, { adult: v }).catch((err) => toastError(err.message || 'Could not change that.')),
       }),
       toggleRow({
-        label: 'List this space on voxaraspace.com/discover',
-        hint: 'Anyone can find it there: the name, member count, description and the invite. Turn off any time.',
+        label: 'Publish to Space Discovery',
+        hint: 'Lists this space in the app (Join a space, Browse public spaces) and on voxaraspace.com/discover: the name, member and online counts, description and the invite. Anyone can join from there. Turn off any time.',
         value: Boolean(guild.discoverable),
         onChange: (v) => updateGuild(guildId, { discoverable: v }),
       })));

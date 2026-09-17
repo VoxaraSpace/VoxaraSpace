@@ -7,6 +7,17 @@
     content="default-src 'none'; connect-src 'self' ws: wss:; img-src 'self' data: blob: http: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; media-src 'self' blob: http: https:; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none';"
   />
   <title>Voxara</title>
+  <!-- Installable on a phone: Safari's Add to Home Screen and Chrome's Install
+       app use these. The desktop app ignores them. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0d0d0f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Voxara" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles/tokens.css" />
   <link rel="stylesheet" href="styles/base.css" />
   <link rel="stylesheet" href="styles/titlebar.css" />

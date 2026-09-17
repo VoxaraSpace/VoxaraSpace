@@ -1378,3 +1378,20 @@
 .sidebar.is-rail .spacetile--dim .spacetile__face--icon { background: transparent; border: 1px dashed var(--rule-strong); }
 .sidebar.is-rail .spacebar__divider { width: 32px; height: 1px; background: var(--rule-strong); margin: 4px 0; flex: none; }
 .sidebar.is-rail .spacetile__badge { position: absolute; right: -4px; bottom: -4px; }
+
+/* Unread without a ping: a quiet dot instead of a number. */
+.spacetile__dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--text); border: 2px solid var(--bg-sidebar); }
+.row__dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--text); margin-right: 5px; }
+
+/* Installed to a phone's home screen (Add to Home Screen / Install app): the
+   page runs edge to edge, so keep the title bar below the status bar and the
+   composer above the home indicator. */
+@media (display-mode: standalone) {
+  .titlebar {
+    height: calc(var(--titlebar-h) + env(safe-area-inset-top, 0px));
+    flex-basis: calc(var(--titlebar-h) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .workspace { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .auth-screen, .auth-host { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
