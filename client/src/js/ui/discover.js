@@ -72,7 +72,7 @@ export function showDiscover(initialQuery = '') {
           el('div', { class: 'discover__meta' },
             `${s.members} member${s.members === 1 ? '' : 's'}`,
             s.online ? el('span', { class: 'discover__online' }, ` · ${s.online} online`) : null),
-          s.description ? el('div', { class: 'discover__desc' }, s.description) : null),
+          s.description ? el('div', { class: 'discover__desc', title: s.description }, s.description) : null),
         action));
     }
   }

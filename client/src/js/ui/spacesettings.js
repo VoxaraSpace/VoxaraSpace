@@ -102,6 +102,31 @@ export function rolesOf(guild, userId) {
     .sort((a, b) => b.position - a.position);
 }
 
+/** The longer text shown on Space Discovery, saved on its own button. */
+function discoveryBlurb(guildId, guild) {
+  const box = el('textarea', {
+    class: 'field__input field__textarea', id: 'discoverText', rows: 4, maxlength: 400,
+    placeholder: guild.description || 'Tell people what this space is about and who it is for.',
+    value: guild.discoverText || '',
+  });
+  const count = el('span', { class: 'field__hint' }, `${box.value.length}/400`);
+  box.addEventListener('input', () => { count.textContent = `${box.value.length}/400`; });
+  const save = el('button', { class: 'btn btn--sm', type: 'button' }, 'Save blurb');
+  save.addEventListener('click', async () => {
+    save.disabled = true;
+    try { await updateGuild(guildId, { discoverText: box.value.trim() }); toastSuccess('Discovery blurb saved.'); }
+    catch (err) { toastError(err.message || 'Could not save that.'); }
+    finally { save.disabled = false; }
+  });
+  return el('div', { class: 'field', style: { marginTop: '10px' } },
+    el('label', { class: 'field__label', for: 'discoverText' }, 'Discovery blurb'),
+    box,
+    el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginTop: '6px' } },
+      el('span', { class: 'field__hint' }, 'Shown on Space Discovery instead of the short description. Up to 400 characters, line breaks allowed.'),
+      count),
+    el('div', { class: 'settings__actions' }, save));
+}
+
 export function showSpaceSettings(guildId, initial = 'overview') {
   const isOwner = () => store.guild(guildId)?.ownerId === store.selfId;
   // The cog is for people who can edit the space; the entry points are hidden
@@ -1116,10 +1141,11 @@ function safetyPane(guildId, pane) {
       }),
       toggleRow({
         label: 'Publish to Space Discovery',
-        hint: 'Lists this space in the app (Join a space, Browse public spaces) and on voxaraspace.com/discover: the name, member and online counts, description and the invite. Anyone can join from there. Turn off any time.',
+        hint: 'Lists this space in the app (the globe button) and on voxaraspace.com/discover: the picture, name, member and online counts, the blurb below and the invite. Anyone can join from there. Turn off any time.',
         value: Boolean(guild.discoverable),
         onChange: (v) => updateGuild(guildId, { discoverable: v }),
-      })));
+      }),
+      discoveryBlurb(guildId, guild)));
   }
 
   if (canLock) {
