@@ -171,3 +171,8 @@ export function editableImage({ shape = 'square', url, fallback, label, onPick, 
   frame.appendChild(pencil);
   return frame;
 }
+
+/** The blue check that marks the one space run by the people who make Voxara. */
+export function officialBadge() {
+  return el('span', { class: 'official', title: 'Official Voxara space: run by the people who make Voxara' }, icon('check'), 'Official');
+}

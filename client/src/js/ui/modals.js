@@ -15,6 +15,7 @@ import { initials } from '../utils.js';
 import { toastSuccess, toastError } from './toast.js';
 import { buildTagManager } from './forum.js';
 import { showDiscover } from './discover.js';
+import { officialBadge } from './bits.js';
 
 /** Wraps an async submit handler with busy state and inline error reporting. */
 export function submitButton(label, handle, run) {
@@ -171,8 +172,9 @@ export function showPeek(data) {
 
   const handle = openModal({
     title: g.name,
-    subtitle: `${g.memberCount} member${g.memberCount === 1 ? '' : 's'}${data.channelName ? ` · #${data.channelName}` : ''}`,
+    subtitle: `${g.official ? 'Official Voxara space · ' : ''}${g.memberCount} member${g.memberCount === 1 ? '' : 's'}${data.channelName ? ` · #${data.channelName}` : ''}`,
     body: el('div', { class: 'peek' },
+      g.official ? el('p', { class: 'field__hint' }, officialBadge(), ' Run by the people who make Voxara.') : null,
       g.description ? el('p', { class: 'peek__desc' }, g.description) : null,
       el('p', { class: 'field__hint' }, 'A read-only preview. Join to take part.'),
       messages),

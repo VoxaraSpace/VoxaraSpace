@@ -11,6 +11,7 @@ import { openModal } from './overlay.js';
 import { textInput } from './bits.js';
 import { toastError } from './toast.js';
 import { joinGuild, openGuild } from '../actions.js';
+import { officialBadge } from './bits.js';
 
 let handle = null;
 
@@ -65,10 +66,10 @@ export function showDiscover(initialQuery = '') {
         try { await joinGuild(s.invite); own.close(); }
         catch (err) { action.disabled = false; toastError(err.message || 'Could not join.'); }
       });
-      list.appendChild(el('div', { class: 'discover__row' },
+      list.appendChild(el('div', { class: `discover__row${s.official ? ' discover__row--official' : ''}` },
         face,
         el('div', { class: 'discover__text' },
-          el('div', { class: 'discover__name' }, s.name, s.adult ? el('span', { class: 'discover__tag' }, '18+') : null),
+          el('div', { class: 'discover__name' }, s.name, s.official ? officialBadge() : null, s.adult ? el('span', { class: 'discover__tag' }, '18+') : null),
           el('div', { class: 'discover__meta' },
             `${s.members} member${s.members === 1 ? '' : 's'}`,
             s.online ? el('span', { class: 'discover__online' }, ` · ${s.online} online`) : null),

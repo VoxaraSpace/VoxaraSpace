@@ -14,6 +14,7 @@ import {
 import { showSettings } from './settings.js';
 import { showSpaceSettings, canConfigureSpace, canManage, roleColor, channelPermission } from './spacesettings.js';
 import { showDiscover } from './discover.js';
+import { officialBadge } from './bits.js';
 import { showUserPopover } from './profile.js';
 import { openGuildMenu, openChannelMenu, openCategoryMenu, openSpaceBackgroundMenu, openUserMenu, openFriendGroupMenu, openFriendsBackgroundMenu, openVoiceMemberMenu } from './menus.js';
 import { startVoiceChannel, currentVoiceChannel, leaveVoiceChannel, watchStream } from './call.js';
@@ -567,7 +568,9 @@ function renderSpaceList() {
   }
   const currentGuildActive = store.ui.sidebarMode !== 'friends';
 
-  for (const guild of store.guilds.values()) {
+  // The official Voxara space always sits first.
+  const ordered = [...store.guilds.values()].sort((a, b) => Number(Boolean(b.official)) - Number(Boolean(a.official)));
+  for (const guild of ordered) {
     const isCurrent = guild.id === currentId;
     const totals = store.guildUnread(guild.id);
     const iconUrl = mediaUrl(guild.iconUrl);
@@ -576,10 +579,10 @@ function renderSpaceList() {
       // The space colour drives the tile's marker, so it stays meaningful even
       // once a picture is uploaded — otherwise it only ever showed as the
       // fallback nobody sees.
-      class: `spacetile${isCurrent && currentGuildActive ? ' is-current' : ''}`,
+      class: `spacetile${isCurrent && currentGuildActive ? ' is-current' : ''}${guild.official ? ' spacetile--official' : ''}`,
       style: { '--space-color': guild.iconColor },
       type: 'button',
-      title: guild.name,
+      title: guild.official ? `${guild.name} (official Voxara space)` : guild.name,
       'aria-current': isCurrent && currentGuildActive ? 'true' : null,
       onClick: () => { if (rail && store.ui.sidebarMode === 'friends') setMode('spaces'); openGuild(guild.id); },
       onContextMenu: (event) => {
@@ -599,6 +602,7 @@ function renderSpaceList() {
     } else if (totals.unread > 0) {
       face.appendChild(el('span', { class: 'spacetile__dot', 'aria-label': 'Unread messages' }));
     }
+    if (guild.official) face.appendChild(el('span', { class: 'spacetile__official', title: 'Official Voxara space' }, icon('check')));
     tile.appendChild(face);
     tile.appendChild(el('span', { class: 'spacetile__name' }, guild.name));
     strip.appendChild(tile);
@@ -670,7 +674,7 @@ function renderSpaceHead(guild) {
   }, iconUrl ? null : initialsOf(guild.name)));
 
   bar.appendChild(el('span', { class: 'spacehead__text' },
-    el('span', { class: 'spacehead__name' }, guild.name),
+    el('span', { class: 'spacehead__name' }, guild.name, guild.official ? officialBadge() : null),
     el('span', { class: 'spacehead__meta' },
       (() => { const n = guild.memberIds.filter((id) => !store.user(id)?.webhook).length; return `${n} member${n === 1 ? '' : 's'}`; })())));
 

@@ -3895,3 +3895,11 @@ body.has-theme-bg .chat { background: transparent; }
 .discover__online { color: var(--online, #3ba55d); }
 .discover__desc { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .discover__row .btn { flex: none; }
+
+/* ---- the official Voxara space ---- */
+.official { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; padding: 1px 7px 1px 5px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; vertical-align: middle; flex: none; }
+.official svg { width: 11px; height: 11px; stroke-width: 3; }
+.spacehead__name .official { font-size: 9.5px; padding: 0 6px 0 4px; }
+.spacetile__official { position: absolute; left: -4px; bottom: -4px; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; border: 2px solid var(--bg-sidebar); }
+.spacetile__official svg { width: 9px; height: 9px; stroke-width: 3.5; }
+.discover__row--official { border-color: var(--accent); }
