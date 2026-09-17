@@ -16,6 +16,7 @@ const PATHS = {
   smile: '<circle cx="12" cy="12" r="9" /><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0" /><path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.2" stroke-linecap="round" />',
   logout: '<path d="M15 17l5-5-5-5" /><path d="M20 12H9" /><path d="M12 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6" />',
   compass: '<circle cx="12" cy="12" r="9" /><path d="m15.5 8.5-2 5-5 2 2-5z" />',
+  globe: '<circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />',
   'chevron-down': '<path d="m6 9 6 6 6-6" />',
   'chevron-right': '<path d="m9 6 6 6-6 6" />',
   'arrow-down': '<path d="M12 5v14M6 13l6 6 6-6" />',

@@ -36,6 +36,7 @@ export function mountSidebar() {
     else showCreateServer();
   });
   document.getElementById('sidebarJoin').addEventListener('click', showJoinServer);
+  document.getElementById('sidebarDiscover').addEventListener('click', () => showDiscover());
   // The Steam store: only offered when the server has the integration on.
   const storeBtn = document.getElementById('sidebarStore');
   storeBtn.addEventListener('click', () => {
@@ -131,6 +132,7 @@ export function renderSidebar() {
   document.getElementById('sidebarCreate')?.setAttribute(
     'aria-label', friendsMode ? 'Add a friend' : 'Create a space');
   document.getElementById('sidebarJoin').hidden = friendsMode;
+  document.getElementById('sidebarDiscover').hidden = friendsMode;
   const compactBtn = document.getElementById('sidebarCompact');
   compactBtn.hidden = friendsMode;
   compactBtn.setAttribute('aria-pressed', String(Boolean(store.ui.spacesCollapsed)));
@@ -608,6 +610,7 @@ function renderSpaceList() {
     strip.appendChild(el('div', { class: 'spacebar__divider' }));
     strip.appendChild(railTile('New space', 'plus', () => showCreateServer()));
     strip.appendChild(railTile('Join', 'compass', () => showJoinServer()));
+    strip.appendChild(railTile('Discovery', 'globe', () => showDiscover()));
     strip.appendChild(railTile(store.ui.spacesCollapsed ? 'Names' : 'Icons only', store.ui.spacesCollapsed ? 'list' : 'minus', () => document.getElementById('sidebarCompact')?.click(), { cls: 'spacetile--dim' }));
   }
 
