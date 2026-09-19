@@ -152,6 +152,7 @@ export function showSpaceSettings(guildId, initial = 'overview') {
       { id: 'members', label: 'Members', icon: 'users', desc: 'Everyone in this space' },
       { id: 'roles', label: 'Roles', icon: 'tag', desc: 'Roles and permissions' },
       { id: 'invite', label: 'Invite', icon: 'link', desc: 'Bring people in' },
+      { id: 'welcome', label: 'Welcome', icon: 'sparkle', desc: 'What new members see first' },
     ] },
     ...(canModerate ? [{ group: 'Moderation', items: [
       { id: 'reports', label: 'Reports', icon: 'flag', desc: 'Reports from members' },
@@ -185,6 +186,7 @@ export function showSpaceSettings(guildId, initial = 'overview') {
       notifications: (pane, handle, ctx) => notificationsPane(guildId, pane, handle, ctx),
       members: (pane, handle, ctx) => membersPane(guildId, pane, handle, ctx),
       invite: (pane, handle, ctx) => invitePane(guildId, pane, handle, ctx),
+      welcome: (pane, handle) => welcomePane(guildId, pane, handle),
       reports: (pane, handle, ctx) => reportsPane(guildId, pane, handle, ctx),
       safety: (pane, handle, ctx) => safetyPane(guildId, pane, handle, ctx),
       automod: (pane, handle) => automodPane(guildId, pane, handle),
@@ -1559,6 +1561,52 @@ function openRolePicker(anchor, guildId, member, ctx) {
     el('span', { class: 'rolepicker__check' }, icon('check')))));
 
   openPopover(anchor, panel, { placement: 'bottom-end' });
+}
+
+/**
+ * The owner's side of onboarding: a greeting, rules, whether they must be
+ * accepted, and which roles members may pick for themselves.
+ */
+function welcomePane(guildId, pane, handle) {
+  const guild = store.guild(guildId);
+  if (!guild) return;
+  const canEdit = canManage(guild, 'manageSpace');
+  const o = guild.onboarding || { enabled: false, welcome: '', rules: '', requireAccept: true, pickRoles: [] };
+  const enabled = { value: Boolean(o.enabled) };
+  const welcome = el('textarea', { class: 'field__input field__textarea', id: 'obWelcome', rows: 3, maxlength: 600, placeholder: 'Hey, welcome in! Grab a role below and say hi in #general.', value: o.welcome || '' });
+  const rules = el('textarea', { class: 'field__input field__textarea', id: 'obRules', rows: 7, maxlength: 2000, placeholder: '1. Be kind.\n2. No spam or self-promotion without asking.\n3. Keep it on topic.', value: o.rules || '' });
+  const requireAccept = { value: o.requireAccept !== false };
+  const picked = new Set(o.pickRoles || []);
+  const selfRoles = (guild.roles || []).filter((r) => !Object.values(r.permissions || {}).some(Boolean));
+  const roleList = el('div', { class: 'checklist' });
+  for (const r of selfRoles) {
+    const box = el('input', { type: 'checkbox', id: `ob-role-${r.id}` }); box.checked = picked.has(r.id);
+    box.addEventListener('change', () => { box.checked ? picked.add(r.id) : picked.delete(r.id); });
+    roleList.appendChild(el('label', { class: 'checkline', for: `ob-role-${r.id}` }, box, el('span', { style: { color: r.color || 'inherit' } }, r.name)));
+  }
+  const save = el('button', { class: 'btn btn--primary', type: 'button' }, 'Save welcome');
+  save.addEventListener('click', async () => {
+    save.disabled = true; handle.setError('');
+    try {
+      await updateGuild(guildId, { onboarding: { enabled: enabled.value, welcome: welcome.value, rules: rules.value, requireAccept: requireAccept.value, pickRoles: [...picked] } });
+      toastSuccess(enabled.value ? 'New members will see the welcome screen.' : 'Welcome screen saved and turned off.');
+    } catch (err) { handle.setError(err.message || 'Could not save.'); }
+    finally { save.disabled = false; }
+  });
+  const preview = el('button', { class: 'btn', type: 'button', onClick: () => import('./onboarding.js').then((m) => m.showOnboarding({ ...guild, onboarding: { enabled: true, welcome: welcome.value, rules: rules.value, requireAccept: requireAccept.value, pickRoles: [...picked] } })) }, 'Preview');
+  for (const x of [welcome, rules]) x.disabled = !canEdit;
+  pane.append(
+    section('Welcome screen',
+      el('p', { class: 'field__hint' }, 'Shown once to each new member when they first open the space: your greeting, the rules to accept, and roles they can pick for themselves.'),
+      toggleRow({ label: 'Show a welcome screen to new members', hint: 'Off means people land straight in the first channel.', value: enabled.value, onChange: (v) => { enabled.value = v; } })),
+    section('Greeting', labelledField({ id: 'obWelcome', label: 'Greeting', hint: 'A few lines. 600 characters maximum.', input: welcome })),
+    section('Rules',
+      labelledField({ id: 'obRules', label: 'Rules', hint: 'One per line works best. 2000 characters maximum.', input: rules }),
+      toggleRow({ label: 'Members must accept the rules', hint: 'A tick box they have to check before entering.', value: requireAccept.value, onChange: (v) => { requireAccept.value = v; } })),
+    section('Roles members can pick',
+      selfRoles.length ? roleList : el('p', { class: 'field__hint' }, 'No pickable roles yet. Only roles with no permissions can be self-assigned; create some under Roles (for example Gamer, Artist, EU, NA).'),
+      el('p', { class: 'field__hint' }, 'Roles with permissions are never on this list; moderators hand those out.')),
+    canEdit ? el('div', { class: 'settings__actions' }, preview, save) : null);
 }
 
 function invitePane(guildId, pane, handle, ctx) {

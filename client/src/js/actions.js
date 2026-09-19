@@ -54,6 +54,8 @@ export function openGuild(guildId) {
   const guild = store.guild(guildId);
   if (!guild) return;
   setSidebarMode('spaces');
+  // First visit to a space with a welcome screen: show it over the channel.
+  void import('./ui/onboarding.js').then((m) => m.maybeShowOnboarding(guildId));
   const remembered = store.lastChannelByGuild.get(guildId);
   // Land on a real text channel — never auto-join a voice channel by opening the space.
   const textChannels = guild.channels.filter((c) => c.type !== 'voice');
@@ -596,8 +598,8 @@ export function markRead(channelId) {
 
 // ------------------------------------------------------------------ guilds
 
-export async function createGuild(name) {
-  const result = await net.request('guild:create', { name });
+export async function createGuild(name, template = 'blank') {
+  const result = await net.request('guild:create', { name, template });
   store.upsertGuild(result.guild);
   openGuild(result.guild.id);
   toastSuccess(`“${result.guild.name}” is ready. Share the invite link to bring people in.`, 'Space created');

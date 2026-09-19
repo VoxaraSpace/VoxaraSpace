@@ -69,15 +69,38 @@ export function showCreateServer() {
 
   name.addEventListener('input', () => { if (!pickedImage) renderPicker(); });
 
+  // Templates: a starting set of channels and roles for the kind of community
+  // this is. Fetched from the server so the list stays in one place.
+  let template = 'blank';
+  const templateGrid = el('div', { class: 'tplgrid' });
+  const templateHint = el('p', { class: 'field__hint' }, 'Loading templates…');
+  net.request('guild:templates').then(({ templates }) => {
+    clear(templateGrid);
+    for (const t of templates) {
+      const card = el('button', { class: `tpl${t.id === template ? ' is-on' : ''}`, type: 'button', dataset: { id: t.id } },
+        el('span', { class: 'tpl__icon' }, icon(t.icon || 'layers')),
+        el('span', { class: 'tpl__name' }, t.name),
+        el('span', { class: 'tpl__tag' }, t.tagline),
+        el('span', { class: 'tpl__meta' }, t.channels === 1 ? '1 channel' : `${t.channels} channels${t.roles ? ` · ${t.roles} roles` : ''}`));
+      card.addEventListener('click', () => {
+        template = t.id;
+        for (const c of templateGrid.children) c.classList.toggle('is-on', c.dataset.id === t.id);
+        templateHint.textContent = t.id === 'blank' ? 'Just a #general channel. Add the rest yourself.' : `${t.name}: ${t.channels} channels${t.roles ? ` and ${t.roles} roles` : ''}, ready to rename or delete.`;
+      });
+      templateGrid.appendChild(card);
+    }
+    templateHint.textContent = 'Just a #general channel. Add the rest yourself.';
+  }).catch(() => { templateHint.textContent = 'Templates are not available right now; you will get a #general channel.'; });
+
   const handle = openModal({
     title: 'Create a space',
     subtitle: 'A space has its own picture, channels and members.',
+    wide: true,
     body: [
       picker,
       labelledField({ id: 'newServerName', label: 'Space name', input: name }),
-      el('p', { class: 'field__hint' },
-        'You will get an invite link to share once it is created. A ', el('strong', {}, '#general'),
-        ' channel is set up for you.'),
+      el('div', { class: 'field' }, el('label', { class: 'field__label' }, 'Start from'), templateGrid, templateHint),
+      el('p', { class: 'field__hint' }, 'You will get an invite link to share once it is created.'),
     ],
     actions: [],
     initialFocus: '#newServerName',
@@ -86,7 +109,7 @@ export function showCreateServer() {
   renderPicker();
 
   const create = submitButton('Create space', handle, async () => {
-    const guild = await createGuild(name.value.trim());
+    const guild = await createGuild(name.value.trim(), template);
     if (pickedImage) await uploadSpaceImage(guild.id, pickedImage);
     handle.close();
     showInviteModal(guild);
