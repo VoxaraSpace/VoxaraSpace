@@ -6,6 +6,7 @@ import {
 } from '../actions.js';
 import { showGamingProfile } from './gaming.js';
 import { referralCard } from './referrals.js';
+import { pushSupported, pushState, enablePush, disablePush } from '../push.js';
 import { themeGallery } from './themes.js';
 import { icon } from '../icons.js';
 import { mediaUrl, desktop, net, setSettings } from '../client.js';
@@ -750,8 +751,35 @@ function chatPane(pane) {
 
 // ------------------------------------------------------------ notifications
 
+/** The Web Push switch for the browser, Android and iPhone builds. */
+function pushSection() {
+  if (!pushSupported()) {
+    return section('Notifications when the app is closed',
+      el('p', { class: 'field__hint' }, /iphone|ipad/i.test(navigator.userAgent)
+        ? 'On iPhone, notifications while Voxara is closed need the app added to your home screen (Share, then Add to Home Screen), then turn this on from the installed app.'
+        : 'This browser does not support notifications while the page is closed. The desktop app and the Android app do.'));
+  }
+  const state = pushState();
+  const row = toggleRow({
+    label: 'Notify me when Voxara is closed',
+    hint: state === 'denied'
+      ? 'Notifications are blocked for this site in your browser settings. Allow them there, then turn this on.'
+      : 'DMs, mentions and replies arrive as system notifications on this device even when Voxara is not open. Nothing else is sent, and the push service only ever sees encrypted text.',
+    value: state === 'on',
+    onChange: async (v) => {
+      try {
+        const next = v ? await enablePush() : await disablePush();
+        if (v && next !== 'on') toastError(next === 'denied' ? 'Notifications are blocked in the browser. Allow them for voxaraspace.com and try again.' : 'Permission was not given.');
+        else toastSuccess(v ? 'You will be notified on this device.' : 'Notifications on this device are off.');
+      } catch (err) { toastError(err.message || 'Could not change that.'); }
+    },
+  });
+  return section('Notifications when the app is closed', row);
+}
+
 function notificationsPane(pane) {
   pane.append(
+    pushSection(),
     section('Desktop notifications', choiceRow([
       { value: 'all', label: 'Everything', hint: 'Every new message' },
       { value: 'mentions', label: 'Mentions & DMs', hint: 'Recommended' },

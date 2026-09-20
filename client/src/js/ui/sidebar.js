@@ -848,8 +848,13 @@ function voiceChannelGroup(guild, channel) {
   const connected = store.voiceUsers(channel.id);
   const mine = currentVoiceChannel() === channel.id;
 
+  // The voice channel's text chat has its own unread state, shown the same
+  // way as a text channel: bold + dot for unread, a red count for mentions.
+  const unread = store.unreadFor(channel.id);
+  const pings = store.mentionsFor(channel.id);
+  const isOpen = store.view.channelId === channel.id;
   const row = el('button', {
-    class: `row row--voice${mine ? ' is-connected' : ''}`,
+    class: `row row--voice${mine ? ' is-connected' : ''}${unread > 0 ? ' has-unread' : ''}${isOpen ? ' is-active' : ''}`,
     type: 'button',
     title: mine ? 'Open voice controls' : `Join ${channel.name}`,
     dataset: { channelId: channel.id },
@@ -858,6 +863,11 @@ function voiceChannelGroup(guild, channel) {
   },
     el('span', { class: 'row__mark' }, icon('speaker')),
     el('span', { class: 'row__label' }, channel.name),
+    pings > 0 ? el('span', { class: 'row__badge' }, pings > 99 ? '99+' : String(pings)) : unread > 0 ? el('span', { class: 'row__dot', 'aria-label': 'Unread' }) : null,
+    el('span', {
+      class: 'row__action row__voicechat', role: 'button', tabindex: '-1', title: 'Open the text chat without joining the call',
+      onClick: (event) => { event.stopPropagation(); void openConversation(channel.id, { guildId: channel.guildId, chat: true }); },
+    }, icon('chat')),
     connected.length ? el('span', { class: 'row__voicecount' }, String(connected.length)) : null,
     // Quick disconnect right on the row — no floating call widget any more
     // to leave from, so this needs to not require opening the full call.

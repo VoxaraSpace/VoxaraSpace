@@ -5,8 +5,8 @@ import { store } from '../state.js';
 import { mediaUrl } from '../client.js';
 
 function spaceEmojis() {
-  const guild = store.guildOfChannel(store.view.channelId) || store.guild(store.view.guildId);
-  return guild?.emojis || [];
+  // The current space's emoji first, then every other space you are in.
+  return store.usableEmojis(store.view.channelId);
 }
 
 /**
@@ -62,7 +62,7 @@ export function openEmojiPicker(anchor, onPick, { placement = 'top-end' } = {}) 
         return;
       }
       if (customMatches.length) {
-        scroll.appendChild(el('div', { class: 'emoji-picker__group' }, 'This space'));
+        scroll.appendChild(el('div', { class: 'emoji-picker__group' }, 'Custom'));
         scroll.appendChild(el('div', { class: 'emoji-picker__grid' }, ...customMatches.map(customButton)));
       }
       scroll.appendChild(el('div', { class: 'emoji-picker__group' }, `${matches.length} results`));
@@ -70,8 +70,13 @@ export function openEmojiPicker(anchor, onPick, { placement = 'top-end' } = {}) 
       return;
     }
     if (custom.length) {
-      scroll.appendChild(el('div', { class: 'emoji-picker__group' }, 'This space'));
-      scroll.appendChild(el('div', { class: 'emoji-picker__grid' }, ...custom.map(customButton)));
+      // Grouped by the space each emoji comes from; the current space first.
+      const bySpace = new Map();
+      for (const e of custom) { if (!bySpace.has(e.spaceId)) bySpace.set(e.spaceId, { name: e.spaceName, list: [] }); bySpace.get(e.spaceId).list.push(e); }
+      for (const group of bySpace.values()) {
+        scroll.appendChild(el('div', { class: 'emoji-picker__group' }, group.name));
+        scroll.appendChild(el('div', { class: 'emoji-picker__grid' }, ...group.list.map(customButton)));
+      }
     }
     for (const group of EMOJI_GROUPS) {
       scroll.appendChild(el('div', { class: 'emoji-picker__group' }, group.name));

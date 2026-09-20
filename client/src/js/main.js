@@ -16,6 +16,7 @@ import { toast } from './ui/toast.js';
 import { initUpdates } from './ui/update.js';
 import { maybeStartTour } from './ui/tour.js';
 import { spaceEveryoneMuted } from './actions.js';
+import { syncPush, listenToWorker } from './push.js';
 import * as callui from './ui/call.js';
 
 let workspaceMounted = false;
@@ -213,6 +214,27 @@ async function boot() {
 // An invite carried in by a link: voxara://join/<code> on the desktop, or
 // /app/?join=<code> in a browser. Held until sign-in, then joined once.
 let pendingInvite = null;
+
+/**
+ * The launch banner: one line from the server (PULSE_BANNER), with a Join
+ * button for the official space and a link to the member's own invite link.
+ * Dismissed once per banner id.
+ */
+function showServerBanner() {
+  const b = store.server?.banner;
+  const host = document.getElementById('connectionBanner')?.parentElement;
+  document.getElementById('serverBanner')?.remove();
+  if (!b || !host || getSetting(`bannerDismissed:${b.id}`)) return;
+  const invite = store.server?.officialInvite;
+  const inOfficial = invite && [...store.guilds.values()].some((g) => g.official);
+  const strip = el('div', { class: 'launch-banner', id: 'serverBanner', role: 'status' },
+    el('span', { class: 'launch-banner__text' }, b.text),
+    !inOfficial && invite ? el('button', { class: 'btn btn--sm btn--primary', type: 'button', onClick: () => joinGuild(invite).catch((err) => toast({ title: 'Could not join', body: err.message, kind: 'error' })) }, 'Join the official space') : null,
+    el('button', { class: 'btn btn--sm', type: 'button', onClick: () => import('./ui/settings.js').then((m) => m.showSettings('invite')) }, 'Invite friends'),
+    el('button', { class: 'launch-banner__close', type: 'button', 'aria-label': 'Dismiss', onClick: () => { setSetting(`bannerDismissed:${b.id}`, true); strip.remove(); } }, '×'));
+  host.insertBefore(strip, host.firstChild);
+}
+listenToWorker((channelId) => { if (document.body.classList.contains('is-authed')) void openConversation(channelId); });
 function inviteFromUrl(url) {
   const m = /^voxara:\/\/join\/([A-Za-z0-9-]{4,16})/i.exec(String(url || ''));
   return m ? m[1].toUpperCase() : null;
@@ -246,6 +268,9 @@ function enterWorkspace(ready) {
   document.body.classList.add('is-authed');
   document.getElementById('screenAuth').hidden = true;
   document.getElementById('screenWorkspace').hidden = false;
+  // Web Push (browser, Android, iPhone home screen): keep the device's subscription current.
+  void syncPush();
+  showServerBanner();
 
   applyReduceFlashing();
 

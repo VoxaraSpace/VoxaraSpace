@@ -193,6 +193,20 @@ class AppStore extends Emitter {
     return this.scheduled.filter((s) => s.channelId === channelId).sort((a, b) => a.sendAt - b.sendAt);
   }
 
+  /**
+   * Custom emoji you can use anywhere: the current space's own set first,
+   * then every other space you belong to. Names clash by space order, so a
+   * space's own :party: wins inside that space. Emoji files are public media.
+   */
+  usableEmojis(channelId = null) {
+    const here = this.guildOfChannel(channelId) || this.guild(this.view.guildId);
+    const seen = new Set(); const out = [];
+    const take = (guild) => { for (const e of guild?.emojis || []) { const k = e.name.toLowerCase(); if (seen.has(k)) continue; seen.add(k); out.push({ ...e, spaceName: guild.name, spaceId: guild.id }); } };
+    if (here) take(here);
+    for (const g of this.guilds.values()) if (g !== here) take(g);
+    return out;
+  }
+
   /** Focus Mode: while active, every notification is silenced (mentions too). */
   isFocusActive() {
     return (this.ui.focusUntil || 0) > Date.now();

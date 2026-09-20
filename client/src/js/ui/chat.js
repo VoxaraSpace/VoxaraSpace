@@ -774,10 +774,12 @@ function messageNode(message, previous) {
 
 // Map of :name: -> media URL for the space a channel belongs to (null in DMs).
 function emojiMapFor(channelId) {
-  const guild = store.guildOfChannel(channelId);
-  if (!guild?.emojis?.length) return null;
+  // Every space's emoji, so a :party: from one space renders in a DM or
+  // another space too (files are public media; the current space wins a clash).
+  const list = store.usableEmojis(channelId);
+  if (!list.length) return null;
   const map = {};
-  for (const e of guild.emojis) map[e.name] = mediaUrl(e.url);
+  for (const e of list) map[e.name.toLowerCase()] = mediaUrl(e.url);
   return map;
 }
 
@@ -902,12 +904,51 @@ function inviteCard(code) {
   return card;
 }
 
+/**
+ * A YouTube link: thumbnail with a play button; the player loads only after
+ * a click, from youtube-nocookie.com, so nothing is fetched from Google by
+ * merely reading a message. Reduced-motion users get the same thumbnail.
+ */
+function youtubeCard(embed) {
+  const card = el('div', { class: 'embed embed--video' });
+  const frame = el('div', { class: 'embed__video' });
+  const thumb = el('img', { class: 'embed__video-thumb', src: mediaUrl(embed.image), alt: '', loading: 'lazy' });
+  thumb.addEventListener('error', () => thumb.remove());
+  const play = el('button', { class: 'embed__play', type: 'button', 'aria-label': `Play ${embed.title || 'video'}` }, icon('play'));
+  play.addEventListener('click', () => {
+    if (!/^[A-Za-z0-9_-]{11}$/.test(embed.videoId)) return;
+    const iframe = el('iframe', {
+      class: 'embed__iframe', src: `https://www.youtube-nocookie.com/embed/${embed.videoId}?autoplay=1&rel=0`,
+      allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: '', referrerpolicy: 'no-referrer', title: embed.title || 'YouTube video',
+      sandbox: 'allow-scripts allow-same-origin allow-presentation allow-popups',
+    });
+    frame.replaceChildren(iframe);
+  });
+  frame.append(thumb, play);
+  card.append(frame, el('div', { class: 'embed__text' },
+    el('div', { class: 'embed__site' }, 'YouTube'),
+    el('a', { class: 'embed__title', href: embed.url, target: '_blank', rel: 'noopener', onClick: (e) => { e.preventDefault(); desktop.openExternal(embed.url); } }, embed.title || embed.url)));
+  return card;
+}
+
+/** A link straight to an image: shown as the image, sized like an attachment. */
+function imageLinkCard(embed) {
+  const card = el('div', { class: 'embed embed--image' });
+  const img = el('img', { class: 'embed__imglink', src: mediaUrl(embed.image), alt: embed.url, loading: 'lazy' });
+  img.addEventListener('error', () => card.remove());
+  img.addEventListener('click', () => desktop.openExternal(embed.url));
+  card.append(img, el('div', { class: 'embed__site embed__site--under' }, embed.siteName || ''));
+  return card;
+}
+
 function embedCard(embed) {
   // A shared Steam game renders as a rich card that opens the full in-app page.
   if (embed.kind === 'steamgame') return steamGameCard(embed);
   // A bot- or webhook-authored embed (see BOTS.md) — arbitrary title, text,
   // fields and images the sender composed, not something we scraped.
   if (embed.kind === 'rich') return richEmbedCard(embed);
+  if (embed.kind === 'youtube' && embed.videoId) return youtubeCard(embed);
+  if (embed.kind === 'image' && embed.image) return imageLinkCard(embed);
 
   const card = el('div', { class: 'embed' });
   const text = el('div', { class: 'embed__text' });
