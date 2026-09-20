@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Voxara</string>
+    <string name="offline_title">Voxara can\'t reach the server</string>
+    <string name="offline_body">Check your connection, then pull down to try again.</string>
+</resources>
