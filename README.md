@@ -1,9 +1,28 @@
-# Voxara
+<p align="center">
+  <img src="https://voxaraspace.com/site/coming-soon/logo.png" width="96" alt="Voxara" />
+</p>
 
-Voice and text chat for friends and communities. This repository holds the
-code that runs on your computer: the desktop app, the bot SDK and example
-bots. It is published so that anyone can check what the app does with their
-data, build it themselves, and report problems.
+<h1 align="center">Voxara</h1>
+
+<p align="center">Free voice and text chat for friends and communities. No ads, no data sales, no ID checks.</p>
+
+<p align="center">
+  <a href="https://voxaraspace.com/download">Download</a> ·
+  <a href="https://voxaraspace.com/features">Features</a> ·
+  <a href="https://voxaraspace.com/developers/docs/">Bot docs</a> ·
+  <a href="https://voxaraspace.com/discover/">Discover spaces</a> ·
+  <a href="SECURITY.md">Security reviews</a>
+</p>
+
+<p align="center">
+  <img src="https://voxaraspace.com/site/coming-soon/app.jpg" width="820" alt="Voxara, open on a space's #general channel" />
+</p>
+
+**Spaces** with text, voice and forum channels, roles and permissions, automod word packs and moderation tools. **Voice and video** calls with screen sharing that carries game audio and an in-game overlay. **Bots and webhooks** through a small SDK. **Templates** so a new space starts ready. **Space Discovery** for public communities.
+
+Runs on **Windows**, **Linux** (AppImage and .deb), **Android**, and in any **browser** (iPhone via Add to Home Screen). Every app updates itself.
+
+This repository holds the code that runs on your computer, published so that anyone can check what the app does with their data. The server is not included.
 
 - Source: https://github.com/VoxaraSpace/VoxaraSpace
 - Website and downloads: https://voxaraspace.com
