@@ -2,7 +2,7 @@
 
 const {
   app, BrowserWindow, ipcMain, shell, Notification, Menu, nativeTheme, protocol, net: electronNet, screen,
-  Tray, nativeImage, session, desktopCapturer, clipboard, safeStorage} = require('electron');
+  Tray, nativeImage, session, desktopCapturer, clipboard, safeStorage, dialog} = require('electron');
 const { execFile } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -876,6 +876,27 @@ async function checkAndOfferUpdate(force = false) {
     const result = await updater.checkForUpdates(updateServerUrl());
     if (result?.status === 'available' && result.version !== lastOfferedVersion) {
       lastOfferedVersion = result.version;
+      if (process.platform === 'linux') {
+        // Linux gets the system dialog rather than the in-page card. A report
+        // from an X11 desktop had the card's buttons dead (the window could be
+        // dragged by them instead): the frameless window's drag region ate
+        // the clicks. A GTK dialog is drawn outside the page, so nothing in
+        // the page can get in its way.
+        const { response } = await dialog.showMessageBox(mainWindow, {
+          type: 'info', title: 'Update available',
+          message: `Voxara ${result.version} is available.`,
+          detail: `${result.notes ? result.notes + '\n\n' : ''}You are on ${app.getVersion()}.${result.manual ? ' This copy was installed from a package, so the new version is downloaded from the website.' : ' Voxara will restart to finish.'}`,
+          buttons: [result.manual ? 'Open the download page' : 'Update and restart', 'Later'], defaultId: 0, cancelId: 1,
+        });
+        if (response === 0) {
+          mainWindow?.webContents.send('update:progress', { phase: 'downloading', percent: 0 });
+          try {
+            const r = await updater.downloadAndApply((progress) => { mainWindow?.setProgressBar?.(progress.phase === 'downloading' ? Math.max(0.02, (progress.percent || 0) / 100) : 1); mainWindow?.webContents.send('update:progress', progress); });
+            if (r?.status === 'error') dialog.showErrorBox('Update failed', r.message || 'Something went wrong.');
+          } catch (err) { mainWindow?.setProgressBar?.(-1); dialog.showErrorBox('Update failed', err.message); }
+        }
+        return;
+      }
       mainWindow?.webContents.send('update:available', {
         version: result.version, notes: result.notes || '', current: app.getVersion(), required: Boolean(result.required), manual: Boolean(result.manual),
       });

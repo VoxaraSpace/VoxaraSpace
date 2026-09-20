@@ -238,6 +238,11 @@
   position: absolute;
   inset: 0;
   pointer-events: auto;
+  /* Never a window-drag region. The sign-in card underneath is draggable so
+     the frameless window can be moved before the title bar exists; on Linux
+     a drag region swallows clicks, so an update prompt over the card could be
+     dragged but not clicked. Windows lets clicks through, which hid this. */
+  -webkit-app-region: no-drag;
   display: grid;
   place-items: center;
   padding: 60px 20px 20px;
@@ -253,6 +258,10 @@
 @keyframes pop-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
+}
+
+.modal, .modal button, .modal input, .modal textarea, .modal a, .modal label {
+  -webkit-app-region: no-drag;
 }
 
 .modal {
@@ -370,6 +379,7 @@
 /* ---------------------------------------------------------------- popover */
 
 .popover {
+  -webkit-app-region: no-drag;
   position: absolute;
   pointer-events: auto;
   min-width: 200px;
@@ -846,6 +856,7 @@ kbd.key {
 }
 
 .toast {
+  -webkit-app-region: no-drag;
   pointer-events: auto;
   display: flex;
   align-items: flex-start;
