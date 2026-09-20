@@ -1,6 +1,6 @@
 {
   "name": "pulse-client",
-  "version": "1.53.1",
+  "version": "1.54.0",
   "description": "Voxara desktop app: voice and text chat for friends and communities",
   "main": "main.js",
   "license": "Apache-2.0",
@@ -16,8 +16,8 @@
     "pack": "electron-builder --dir"
   },
   "devDependencies": {
-    "electron": "^32.2.0",
-    "electron-builder": "^25.1.8",
+    "electron": "^41.10.7",
+    "electron-builder": "^26.16.1",
     "resedit": "^2.0.3"
   },
   "build": {
@@ -61,9 +61,11 @@
       "synopsis": "Voice and text chat for friends and communities",
       "maintainer": "Voxara <support@voxaraspace.com>",
       "desktop": {
-        "Name": "Voxara",
-        "Comment": "Voice and text chat for friends and communities",
-        "StartupWMClass": "Voxara"
+        "entry": {
+          "Name": "Voxara",
+          "Comment": "Voice and text chat for friends and communities",
+          "StartupWMClass": "Voxara"
+        }
       }
     },
     "deb": {
@@ -95,6 +97,6 @@
     },
     "afterPack": "build/after-pack.js"
   },
-  "buildSerial": 137,
+  "buildSerial": 138,
   "private": true
 }
