@@ -548,6 +548,16 @@ function handleServerEvent({ op, data }) {
         : { title: 'Theme not added', body: `“${data.name}” wasn't added to the list.`, kind: 'info' });
       break;
 
+    case 'badge:earned':
+      // A badge the server just granted (e.g. Recruiter): profile refresh + a cheer.
+      store.self = { ...store.self, badges: [...new Set([...(store.self?.badges || []), data.badge])] };
+      if (store.selfId) store.upsertUser({ id: store.selfId, badges: store.self.badges });
+      store.emit('self');
+      toast({ title: `${data.title} badge earned`, body: data.body, kind: 'success', timeout: 10000 });
+      break;
+    case 'referral:update':
+      break;
+
     case 'self:premium':
       // Voxara Plus was granted or removed for this account — light it up (or
       // dim it) without a reconnect.

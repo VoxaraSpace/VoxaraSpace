@@ -1395,3 +1395,9 @@
   .workspace { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .auth-screen, .auth-host { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 }
+
+/* Recruiter leaderboard shortcut under the official space's header. */
+.spacehead__leader { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 14px; border: 0; border-bottom: 1px solid var(--rule); background: color-mix(in srgb, #f472b6 8%, transparent); color: var(--text); font: inherit; font-size: 12.5px; font-weight: 650; cursor: pointer; text-align: left; }
+.spacehead__leader:hover { background: color-mix(in srgb, #f472b6 16%, transparent); }
+.spacehead__leader svg { width: 14px; height: 14px; color: #f472b6; flex: none; }
+.spacehead__leader-hint { margin-left: auto; font-size: 11px; color: var(--text-faint); font-weight: 500; }

@@ -5,6 +5,7 @@ import {
   getBilling, exportMyData, linkSteam, unlinkSteam, fetchSteamProfile, PREF_DEFAULTS, startAgeVerification,
 } from '../actions.js';
 import { showGamingProfile } from './gaming.js';
+import { referralCard } from './referrals.js';
 import { themeGallery } from './themes.js';
 import { icon } from '../icons.js';
 import { mediaUrl, desktop, net, setSettings } from '../client.js';
@@ -33,6 +34,7 @@ const TABS = [
     { id: 'advanced', label: 'Advanced', icon: 'sliders', desc: 'Developer mode, IDs, reset' },
   ] },
   { group: 'Membership', items: [
+    { id: 'invite', label: 'Invite friends', icon: 'users', desc: 'Your link, and the Recruiter badge' },
     { id: 'plus', label: 'Voxara Plus', icon: 'sparkle', desc: 'Support Voxara — a few optional extras' },
   ] },
   { group: 'Build', items: [
@@ -1085,6 +1087,7 @@ Object.assign(PANES, {
   appearance: appearancePane,
   chat: chatPane,
   notifications: notificationsPane,
+  invite: (pane) => pane.append(section('Invite friends', referralCard())),
   plus: plusPane,
   advanced: advancedPane,
   guide: guidePane,

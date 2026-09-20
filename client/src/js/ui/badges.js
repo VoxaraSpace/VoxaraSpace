@@ -21,6 +21,7 @@ const GLYPHS = {
   bot:    'M7 9h10a2 2 0 012 2v5a2 2 0 01-2 2H7a2 2 0 01-2-2v-5a2 2 0 012-2zM12 9V5M12 5h.01M9.5 13.5h.01M14.5 13.5h.01',
   heart:  'M12 20s-7-4.5-9-9c-1.2-2.8.6-6 3.7-6 1.9 0 3.4 1 4.3 2.6C11.9 6 13.4 5 15.3 5c3.1 0 4.9 3.2 3.7 6-2 4.5-7 9-7 9z',
   bolt:   'M13 2L5 13h5l-1 9 8-11h-5z',
+  people: 'M16 20v-1.5a4 4 0 00-4-4H6a4 4 0 00-4 4V20M9 3.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM22 20v-1.5a4 4 0 00-3-3.87M16.5 3.6a3.5 3.5 0 010 6.8',
   cards:  'M12 3l8 4-8 4-8-4zM4 12l8 4 8-4M4 17l8 4 8-4',
   flask:  'M9 3h6M10 3v6l-5.5 9.5A2 2 0 006.2 21h11.6a2 2 0 001.7-2.5L14 9V3M8 15h8',
 };
@@ -34,6 +35,7 @@ export const BADGES = {
   contributor: { label: 'Contributor', class: 'badge--contributor', glyph: 'branch', title: 'Contributed to Voxara' },
   translator:  { label: 'Translator', class: 'badge--translator', glyph: 'globe', title: 'Helped translate Voxara' },
   verified:    { label: 'Verified', class: 'badge--verified', glyph: 'seal', title: 'Verified account' },
+  recruiter:   { label: 'Recruiter', class: 'badge--recruiter', glyph: 'people', title: 'Brought three or more people to Voxara' },
   bot:         { label: 'Bot', class: 'badge--bot', glyph: 'bot', title: 'An automated account' },
   card_bronze: { label: 'Collector', class: 'badge--bronze', glyph: 'cards', title: 'Collected 3 cards' },
   card_silver: { label: 'Avid Collector', class: 'badge--silver', glyph: 'cards', title: 'Collected 8 cards' },

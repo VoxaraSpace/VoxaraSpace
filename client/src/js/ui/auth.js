@@ -50,6 +50,10 @@ export function mountAuth(callback) {
   fields.switchText = document.getElementById('authSwitchText');
   fields.reveal = document.getElementById('authReveal');
   fields.inviteGroup = document.getElementById('fieldInviteCode');
+  fields.referralGroup = document.getElementById('fieldReferral');
+  fields.referral = document.getElementById('authReferral');
+  // A referral code carried in by a link (/r/CODE -> /app/?ref=CODE) or the download page.
+  try { const ref = new URLSearchParams(location.search).get('ref') || localStorage.getItem('voxara:ref'); if (ref && /^[A-Za-z0-9]{8}$/.test(ref)) { fields.referral.value = ref.toUpperCase(); localStorage.setItem('voxara:ref', ref.toUpperCase()); } } catch { /* no storage */ }
   fields.inviteCode = document.getElementById('authInviteCode');
   fields.recoveryGroup = document.getElementById('fieldRecoveryCode');
   fields.recoveryCode = document.getElementById('authRecoveryCode');
@@ -125,6 +129,7 @@ function setMode(next) {
   // Only shown once the server has said it is invite only, so an open server
   // never asks for something nobody has.
   fields.inviteGroup.hidden = !(registering && inviteRequired);
+  fields.referralGroup.hidden = !registering;
   fields.recoveryGroup.hidden = !recovering;
   fields.forgotRow.hidden = registering;
   fields.forgot.textContent = recovering ? 'Back to sign in' : 'Forgot your password?';
@@ -347,7 +352,9 @@ async function submit() {
         birthdate: fields.birthdate.value,
         password,
         inviteCode: fields.inviteCode.value.trim(),
+        ref: fields.referral.value.trim().toUpperCase() || undefined,
       });
+      try { localStorage.removeItem('voxara:ref'); } catch { /* no storage */ }
     } else if (mode === 'recover') {
       ready = await net.request('auth:recover', {
         username,

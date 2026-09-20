@@ -617,6 +617,7 @@
 .badge--beta        { color: #fbbf24; border-color: color-mix(in srgb, #fbbf24 45%, transparent); }
 .badge--bug         { color: #4ade80; border-color: color-mix(in srgb, #4ade80 45%, transparent); }
 .badge--contributor { color: #2dd4bf; border-color: color-mix(in srgb, #2dd4bf 45%, transparent); }
+.badge--recruiter   { color: #f472b6; border-color: color-mix(in srgb, #f472b6 45%, transparent); }
 .badge--translator  { color: #e879f9; border-color: color-mix(in srgb, #e879f9 45%, transparent); }
 .badge--verified    { color: var(--accent-hover); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 .badge--bot         { color: var(--text-faint); border-color: var(--rule-strong); }
@@ -3938,3 +3939,20 @@ body.has-theme-bg .chat { background: transparent; }
 .onboard__check svg { width: 14px; height: 14px; stroke-width: 3; }
 .onboard__role.is-on { border-color: var(--role); background: color-mix(in srgb, var(--role) 18%, var(--bg-raised)); }
 .onboard__role.is-on .onboard__check { display: inline-block; }
+
+/* ---- invite rewards ---- */
+.refcard { display: flex; flex-direction: column; gap: 10px; }
+.refcard__row { display: flex; gap: 8px; }
+.refcard__row .field__input { flex: 1; font-family: var(--mono, monospace); font-size: 13px; }
+.refbar { height: 8px; border-radius: 999px; background: var(--bg-raised); overflow: hidden; border: 1px solid var(--rule); }
+.refbar__fill { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), #f472b6); transition: width var(--normal); }
+.refcard__status { margin: 0; font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.refcard__status.is-done { color: #f472b6; font-weight: 600; }
+.refcard__status svg { width: 14px; height: 14px; }
+.leaderboard { display: flex; flex-direction: column; gap: 6px; }
+.leaderboard__row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 10px; background: var(--bg-surface); }
+.leaderboard__row.is-me { border-color: var(--accent); }
+.leaderboard__row--top1 { background: color-mix(in srgb, #ffd23f 10%, var(--bg-surface)); }
+.leaderboard__rank { width: 28px; text-align: center; font-weight: 800; color: var(--text-muted); flex: none; }
+.leaderboard__name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-weight: 650; overflow: hidden; }
+.leaderboard__count { font-size: 13px; color: var(--text-muted); flex: none; }

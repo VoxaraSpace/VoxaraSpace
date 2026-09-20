@@ -681,6 +681,11 @@ function renderSpaceHead(guild) {
   const chev = el('span', { class: 'spacehead__chev' }, icon('settings'));
   bar.appendChild(chev);
   spaceHead.appendChild(bar);
+  // The official space carries the recruiter leaderboard under its header.
+  if (guild.official) {
+    spaceHead.appendChild(el('button', { class: 'spacehead__leader', type: 'button', onClick: () => import('./referrals.js').then((m) => m.showLeaderboard()) },
+      icon('users'), el('span', {}, 'Recruiter leaderboard'), el('span', { class: 'spacehead__leader-hint' }, 'Top inviters')));
+  }
 }
 
 function renderGuildGroup(guild, { soloView = false } = {}) {
