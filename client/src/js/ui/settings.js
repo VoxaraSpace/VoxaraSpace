@@ -6,6 +6,7 @@ import {
 } from '../actions.js';
 import { showGamingProfile } from './gaming.js';
 import { referralCard } from './referrals.js';
+import { voiceDevicesPane } from './voicesettings.js';
 import { pushSupported, pushState, enablePush, disablePush } from '../push.js';
 import { themeGallery } from './themes.js';
 import { icon } from '../icons.js';
@@ -31,6 +32,7 @@ const TABS = [
   { group: 'App', items: [
     { id: 'appearance', label: 'Appearance', icon: 'palette', desc: 'Theme, density and sidebar' },
     { id: 'chat', label: 'Chat', icon: 'chat', desc: 'How messages send and load' },
+    { id: 'voice', label: 'Voice & video', icon: 'mic', desc: 'Microphone, headset, camera and levels' },
     { id: 'notifications', label: 'Notifications', icon: 'bell', desc: 'Alerts and previews' },
     { id: 'advanced', label: 'Advanced', icon: 'sliders', desc: 'Developer mode, IDs, reset' },
   ] },
@@ -709,13 +711,19 @@ function appearancePane(pane) {
 
 // -------------------------------------------------------------------- chat
 
-function chatPane(pane) {
-  pane.append(
-    section('Voice',
+function voicePane(pane) {
+  voiceDevicesPane(pane, [
+    section('Processing',
       prefToggle('noiseSuppression', 'Noise suppression', 'Strip keyboard clatter and background hum from your microphone. Turn off for music.'),
       prefToggle('echoCancellation', 'Echo cancellation', 'Stop your speakers feeding back into your microphone.'),
       sensitivityRow(),
       pushToTalkRow()),
+    el('p', { class: 'field__hint' }, 'Device choices and levels are saved to this computer. Changes apply to a call in progress.'),
+  ]);
+}
+
+function chatPane(pane) {
+  pane.append(
     section('In-game overlay',
       el('p', { class: 'field__hint' },
         'A small corner display over your game showing who is in the call and who is talking, like the voice list in the sidebar. '
@@ -1114,6 +1122,7 @@ Object.assign(PANES, {
   privacy: privacyPane,
   appearance: appearancePane,
   chat: chatPane,
+  voice: voicePane,
   notifications: notificationsPane,
   invite: (pane) => pane.append(section('Invite friends', referralCard())),
   plus: plusPane,

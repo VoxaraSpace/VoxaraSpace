@@ -60,20 +60,105 @@ async function getMedia(wantVideo) {
   if (!md || !md.getUserMedia) {
     throw Object.assign(new Error('Calls need a secure (https) connection.'), { name: 'InsecureContext' });
   }
-  const stream = await md.getUserMedia({
-    audio: {
-      echoCancellation: store.ui.echoCancellation !== false,
-      noiseSuppression: store.ui.noiseSuppression !== false,
-      autoGainControl: true,
-    },
-    video: false,
-  });
+  const raw = await md.getUserMedia({ audio: micConstraints(), video: false });
+  const stream = withInputGain(raw);
   if (!wantVideo) return stream;
   try {
-    const cam = await md.getUserMedia({ audio: false, video: { width: { ideal: 1280 }, height: { ideal: 720 } } });
+    const cam = await md.getUserMedia({ audio: false, video: cameraConstraints() });
     for (const t of cam.getVideoTracks()) stream.addTrack(t);
   } catch { /* no camera — carry on audio only */ }
   return stream;
+}
+
+/**
+ * Microphone level. Browsers expose no mic volume, so the captured track is
+ * run through a gain node and the gained track is what gets sent. 100 = as
+ * captured; below quietens, above boosts (up to 200). The raw track is kept
+ * on the gained stream's owner so it can be stopped with the rest.
+ */
+let inputGain = null;   // GainNode for the live call, so the slider works mid-call
+let inputCtx = null;
+function withInputGain(raw) {
+  const level = Number(store.ui.inputVolume ?? 100);
+  const track = raw.getAudioTracks()[0];
+  if (!track || level === 100 || !('AudioContext' in window)) { inputGain = null; return raw; }
+  try {
+    inputCtx = inputCtx || new AudioContext();
+    const src = inputCtx.createMediaStreamSource(new MediaStream([track]));
+    inputGain = inputCtx.createGain(); inputGain.gain.value = level / 100;
+    const dest = inputCtx.createMediaStreamDestination();
+    src.connect(inputGain); inputGain.connect(dest);
+    const out = new MediaStream([dest.stream.getAudioTracks()[0], ...raw.getVideoTracks()]);
+    out.__rawTracks = raw.getAudioTracks();
+    // Stopping the gained track must stop the real microphone too.
+    const gained = out.getAudioTracks()[0];
+    const stop = gained.stop.bind(gained);
+    gained.stop = () => { stop(); for (const t of raw.getAudioTracks()) t.stop(); };
+    return out;
+  } catch { inputGain = null; return raw; }
+}
+/** Live slider: adjust the gain of the call in progress. */
+export function applyInputVolume() {
+  const level = Number(store.ui.inputVolume ?? 100);
+  if (inputGain) inputGain.gain.value = level / 100;
+  else if (call?.localStream && level !== 100) void applyDeviceChange('audio'); // no gain stage yet: rebuild the mic path with one
+}
+
+/** The microphone constraints from settings: chosen device (if still present) plus processing toggles. */
+export function micConstraints() {
+  const c = {
+    echoCancellation: store.ui.echoCancellation !== false,
+    noiseSuppression: store.ui.noiseSuppression !== false,
+    autoGainControl: true,
+  };
+  if (store.ui.micDevice) c.deviceId = { ideal: store.ui.micDevice };
+  return c;
+}
+export function cameraConstraints() {
+  const c = { width: { ideal: 1280 }, height: { ideal: 720 } };
+  if (store.ui.cameraDevice) c.deviceId = { ideal: store.ui.cameraDevice };
+  return c;
+}
+
+/**
+ * Swap the microphone (or camera) on a live call: get the new track, hand it
+ * to every peer connection with replaceTrack, and retire the old one. Called
+ * from the Voice settings when the device changes; a no-op with no call.
+ */
+export async function applyDeviceChange(kind = 'audio') {
+  if (!call?.localStream) return;
+  const md = navigator.mediaDevices;
+  if (kind === 'audio') {
+    const fresh = withInputGain(await md.getUserMedia({ audio: micConstraints(), video: false }));
+    const track = fresh.getAudioTracks()[0];
+    if (!track) return;
+    const old = call.localStream.getAudioTracks();
+    track.enabled = old[0] ? old[0].enabled : !call.muted;
+    for (const t of old) { call.localStream.removeTrack(t); t.stop(); }
+    call.localStream.addTrack(track);
+    for (const peer of call.peers.values()) {
+      const sender = peer.pc?.getSenders?.().find((s) => s.track?.kind === 'audio' || (!s.track && s !== peer.videoSender));
+      if (sender) sender.replaceTrack(track).catch(() => {});
+    }
+    applyPtt();
+  } else if (kind === 'video' && !call.camOff && call.localStream.getVideoTracks().length) {
+    const fresh = await md.getUserMedia({ audio: false, video: cameraConstraints() });
+    const track = fresh.getVideoTracks()[0];
+    if (!track) return;
+    for (const t of call.localStream.getVideoTracks()) { call.localStream.removeTrack(t); t.stop(); }
+    call.localStream.addTrack(track);
+    for (const peer of call.peers.values()) if (peer.videoSender && !call.sharing) peer.videoSender.replaceTrack(track).catch(() => {});
+  }
+}
+
+/** Route every remote voice to the chosen output device (headset, speakers). */
+export async function applyOutputDevice() {
+  if (!call) return;
+  const id = store.ui.speakerDevice || '';
+  for (const peer of call.peers.values()) {
+    if (!peer.audioEl?.setSinkId) continue;
+    try { await peer.audioEl.setSinkId(id); } catch { /* device gone or not permitted: default output */ }
+  }
 }
 
 // The sender that carries our outgoing video to one peer (camera, or a slot to
@@ -792,8 +877,15 @@ function applyPeerAudio(uid) {
   if (!peer?.audioEl) return;
   const p = peerAudioFor(uid);
   peer.audioEl.muted = p.muted;
-  peer.audioEl.volume = p.volume;
+  // Per-person volume times the global output level (0..200%, capped at the element's 1.0).
+  peer.audioEl.volume = Math.max(0, Math.min(1, p.volume * (Number(store.ui.outputVolume ?? 100) / 100)));
+  if (store.ui.speakerDevice && peer.audioEl.setSinkId && peer.audioEl.sinkId !== store.ui.speakerDevice) {
+    peer.audioEl.setSinkId(store.ui.speakerDevice).catch(() => {});
+  }
 }
+
+/** Re-apply the output level to everyone (settings slider). */
+export function applyOutputVolume() { if (call) for (const uid of call.peers.keys()) applyPeerAudio(uid); }
 
 // ------------------------------------------------------------- moderation
 /** A moderator disconnected you from the voice channel you were in. */

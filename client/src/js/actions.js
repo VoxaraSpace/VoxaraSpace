@@ -1241,6 +1241,11 @@ export const PREF_DEFAULTS = {
   echoCancellation: true,        // voice: cancel speaker echo
   inputSensitivity: 50,          // voice: 0 (only loud speech lights the ring) to 100 (very sensitive)
   pushToTalk: '',                // voice: a key name (e.g. "Alt" or "F9"); empty = open mic
+  micDevice: '',                 // voice: microphone deviceId ('' = system default)
+  speakerDevice: '',             // voice: output deviceId for other people's audio ('' = system default)
+  cameraDevice: '',              // video: camera deviceId ('' = system default)
+  inputVolume: 100,              // voice: microphone level 0..200 (%), applied to the sent track
+  outputVolume: 100,             // voice: everyone else's level 0..200 (%)
   gameOverlay: 'game',           // in-game voice overlay: game (only while a game is running) | always (any call) | off
   overlayCorner: 'top-left',     // where the overlay sits: top-left | top-right | bottom-left | bottom-right
   shareAudio: true,              // screen share: include what the computer plays (Windows)

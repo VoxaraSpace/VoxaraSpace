@@ -1339,7 +1339,8 @@ if (!app.requestSingleInstanceLock()) {
     // Let the app's own pages use the microphone, camera and screen capture.
     // The renderer is our trusted app://pulse origin, so grant these outright.
     try {
-      const CALL_PERMS = new Set(['media', 'display-capture', 'notifications']);
+      // speaker-selection: choosing which output device plays a call (Voice settings).
+      const CALL_PERMS = new Set(['media', 'display-capture', 'notifications', 'speaker-selection']);
       session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
         callback(CALL_PERMS.has(permission));
       });

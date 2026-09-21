@@ -3956,3 +3956,9 @@ body.has-theme-bg .chat { background: transparent; }
 .leaderboard__rank { width: 28px; text-align: center; font-weight: 800; color: var(--text-muted); flex: none; }
 .leaderboard__name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-weight: 650; overflow: hidden; }
 .leaderboard__count { font-size: 13px; color: var(--text-muted); flex: none; }
+
+/* ---- voice & video settings ---- */
+.voice__row .voice__select { max-width: 260px; }
+.micmeter { height: 12px; border-radius: 999px; background: var(--bg-raised); border: 1px solid var(--rule); overflow: hidden; }
+.micmeter__fill { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #3ba55d, #9be34a 60%, #ffd23f 85%, #e2564f); transition: width 60ms linear; }
+.micmeter__fill.is-hot { filter: brightness(1.2); }
